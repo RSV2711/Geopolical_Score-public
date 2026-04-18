@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Geopolitical Risk Engine v2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1f2e;font-size:14px}
+header{background:#1a1f2e;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.h1{font-size:16px;font-weight:700}.sub{font-size:11px;color:#7a90bb;margin-top:2px}
+.hb{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.btn{padding:6px 13px;border-radius:6px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.22)}.btn:disabled{opacity:.4;cursor:not-allowed}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #e5e7eb;padding:0 16px;gap:2px;overflow-x:auto}
+.tab{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;border-bottom:3px solid transparent;margin-bottom:-2px;color:#6b7280;white-space:nowrap}
+.tab.active{border-color:#3b5bdb;color:#3b5bdb}
+#main{padding:14px 16px}
+/* SOURCE PANEL */
+.srcP{background:#fff;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:12px;overflow:hidden}
+.srcP h3{font-size:12px;font-weight:700;color:#374151;padding:9px 14px;background:#f9fafb;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.srcGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr))}
+.srcItem{padding:9px 14px;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.srcName{font-size:12px;font-weight:600}.srcMeta{font-size:10px;color:#6b7280;margin-top:1px}
+.srcSt{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:600;white-space:nowrap;margin-bottom:4px;display:inline-block}
+.s-ok{background:#dcfce7;color:#166534}.s-snap{background:#fef9c3;color:#854d0e}
+.s-live{background:#dbeafe;color:#1e40af}.s-wait{background:#f3f4f6;color:#6b7280}
+.s-load{background:#ede9fe;color:#6d28d9}.s-err{background:#fee2e2;color:#991b1b}
+.srcBtn{padding:4px 9px;border-radius:5px;border:1px solid #dde;background:#f5f6fa;cursor:pointer;font-size:11px;font-weight:500;color:#374151}
+.srcBtn:hover{background:#e0e7ff;border-color:#a5b4fc;color:#1e40af}
+/* STATS */
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.stat{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;flex:1;min-width:90px}
+.stat .v{font-size:22px;font-weight:800}.stat .l{font-size:11px;color:#6b7280;margin-top:2px}
+/* ALERTS */
+.ab{background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-bottom:12px}
+.ab h3{font-size:12px;font-weight:700;color:#991b1b;margin-bottom:6px}
+.at{display:flex;flex-wrap:wrap;gap:5px}
+.atag{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid #fca5a5;background:#fff;color:#991b1b;cursor:pointer;font-weight:600}
+/* MAP */
+#mapWrap{position:relative;background:#fff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:12px;min-height:400px}
+#mapMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:#6b7280}
+.mt{position:absolute;pointer-events:none;background:#1a1f2e;color:#fff;border-radius:8px;padding:9px 13px;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,.35);display:none;z-index:10;max-width:260px;line-height:1.6}
+.leg{display:flex;flex-wrap:wrap;gap:10px;padding:8px 14px;border-top:1px solid #f0f0f0;font-size:11px;color:#555}
+.leg span{display:flex;align-items:center;gap:5px}
+.leg i{width:12px;height:12px;border-radius:50%;display:inline-block;flex-shrink:0}
+/* TABLE */
+.tw{background:#fff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden}
+.tb{display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid #f0f0f0;align-items:center;flex-wrap:wrap}
+.tb input{flex:1;min-width:160px;padding:6px 10px;border:1px solid #dde;border-radius:6px;font-size:13px;outline:none}
+.sb{padding:5px 12px;border-radius:6px;border:1px solid #dde;background:#f5f6fa;cursor:pointer;font-size:12px;color:#444;font-weight:500}
+.ts{overflow:auto;max-height:58vh}
+table{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap}
+th{padding:7px 6px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;background:#f9fafb;cursor:pointer;user-select:none;position:sticky;top:0;z-index:2}
+th:hover{background:#f0f2f5}
+td{padding:5px 6px;border-bottom:1px solid #f3f4f6}
+tr:hover td{background:#f7f9ff!important}
+.rc td{background:rgba(220,38,38,.04)!important}
+.badge{display:inline-block;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700}
+.bL{background:#dcfce7;color:#166534}.bM{background:#fef9c3;color:#854d0e}
+.bH{background:#fee2e2;color:#991b1b}.bC{background:#fee2e2;color:#991b1b}
+.bw{display:flex;align-items:center;gap:4px;min-width:50px}
+.bb{flex:1;height:5px;background:#e5e7eb;border-radius:3px;overflow:hidden}
+.bf{height:100%;border-radius:3px}
+.bv{font-size:10px;min-width:20px;font-weight:700;text-align:right}
+.gdelt-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap}
+/* UPDATE */
+.upPanel{background:#fff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:12px}
+.upPanel h3{font-size:13px;font-weight:700;color:#374151;padding:10px 14px;background:#f9fafb;border-bottom:1px solid #e5e7eb}
+.upSection{padding:12px 14px;border-bottom:1px solid #f3f4f6}
+.upSection h4{font-size:12px;font-weight:600;color:#1a1f2e;margin-bottom:6px}
+.upSection p{font-size:11px;color:#6b7280;line-height:1.7}
+.steps{margin:8px 0 10px;padding-left:0;list-style:none}
+.steps li{font-size:11px;color:#374151;padding:4px 0 4px 22px;position:relative;line-height:1.6}
+.steps li::before{content:attr(data-n);position:absolute;left:0;top:4px;background:#3b5bdb;color:#fff;width:16px;height:16px;border-radius:50%;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.steps li b{color:#1a1f2e}.steps li a{color:#1e40af}.steps li code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:10px}
+.upSection textarea{width:100%;height:120px;padding:8px;font-family:monospace;font-size:11px;border:1px solid #dde;border-radius:6px;resize:vertical;outline:none;margin-top:6px}
+.upSection textarea:focus{border-color:#3b5bdb}
+.upBtns{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.upBtn{padding:5px 12px;border-radius:6px;border:1px solid #3b5bdb;background:#eff6ff;cursor:pointer;font-size:12px;color:#1e40af;font-weight:500}
+.upBtn:hover{background:#dbeafe}
+.upBtn-g{border-color:#166534;background:#dcfce7;color:#166534}.upBtn-g:hover{background:#bbf7d0}
+.upBtn-p{border-color:#6d28d9;background:#ede9fe;color:#6d28d9}.upBtn-p:hover{background:#ddd6fe}
+.upResult{font-size:11px;margin-top:6px;padding:5px 8px;border-radius:5px;display:none}
+.upResult.ok{background:#dcfce7;color:#166534}.upResult.err{background:#fee2e2;color:#991b1b}
+/* MODAL */
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal{background:#fff;border-radius:14px;max-width:680px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.mh{padding:18px 20px;border-bottom:1px solid #e5e7eb;position:sticky;top:0;background:#fff;z-index:1;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:flex-start}
+.mb{padding:16px 20px 22px}
+.grp{margin-bottom:14px}
+.gtitle{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;padding-bottom:3px;border-bottom-width:2px;border-bottom-style:solid;margin-bottom:8px}
+.vrow{margin-bottom:7px}
+.vlabel{display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px}
+.vsrc{font-size:10px;color:#9ca3af}
+.vbar{display:flex;align-items:center;gap:8px}
+.vbarBg{flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden}
+.vbarFl{height:100%;border-radius:4px}
+.vval{font-size:13px;font-weight:800;min-width:28px;text-align:right}
+/* Country info pill row */
+.cinfo{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.cpill{background:#f1f5f9;border-radius:6px;padding:5px 10px;font-size:11px;color:#475569}
+.cpill b{color:#1a1f2e}
+/* NEWS */
+.newsBox{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:12px}
+.newsBox h4{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.newsItem{padding:6px 0;border-bottom:1px solid #e2e8f0;font-size:12px;line-height:1.5}
+.newsItem:last-child{border-bottom:none}
+.newsItem a{color:#1e40af;text-decoration:none;font-weight:500}
+.newsItem a:hover{text-decoration:underline}
+.newsDate{font-size:10px;color:#94a3b8;margin-top:2px}
+.newsLoading{color:#94a3b8;font-size:12px;font-style:italic}
+/* GDELT BOX */
+.gdeltBox{border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border:1px solid}
+.gdeltKPI{font-size:40px;font-weight:900;line-height:1;min-width:60px;text-align:center}
+.gdeltInfo{flex:1}
+.gdeltLabel{font-size:15px;font-weight:800;margin-bottom:3px}
+.gdeltSub{font-size:11px;opacity:.75;line-height:1.5}
+/* HISTORY */
+.histBox{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:12px}
+.histBox h4{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+/* PROGRESS */
+.pgWrap{background:#fff;border-radius:8px;border:1px solid #e5e7eb;padding:10px 14px;margin-bottom:12px;display:none}
+.pgBar{height:5px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-top:5px}
+.pgFill{height:100%;border-radius:3px;transition:width .3s}
+/* METHOD */
+.meth{background:#fff;border-radius:10px;border:1px solid #e5e7eb;padding:20px;line-height:1.6}
+.meth h2{font-size:17px;font-weight:700;margin-bottom:12px}
+.meth h3{font-size:13px;font-weight:700;margin:16px 0 6px;color:#3b5bdb}
+.meth table{width:100%;font-size:12px;border-collapse:collapse}
+.meth td,.meth th{padding:6px 8px;border:1px solid #e5e7eb}
+.meth th{background:#f9fafb;font-weight:700}
+.fb{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;margin:8px 0;line-height:2;color:#1e40af}
+code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:11px}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="h1">🌍 Geopolitical Risk Engine v2</div>
+  <div class="sub" id="hdrSub">WB WGI · WDI · TI CPI 2024 · FH 2025 · GDELT · REST Countries · Sin IA · Auditable</div></div>
+  <div class="hb">
+    <button class="btn" id="btnWB" onclick="loadWorldBankLive()">🌐 Cargar WB Live</button>
+    <button class="btn" onclick="expCSV()">⬇ CSV</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="goTab('map',this)">🗺 Mapa</div>
+  <div class="tab" onclick="goTab('table',this)">📊 Tabla</div>
+  <div class="tab" onclick="goTab('update',this)">📥 Actualizar datos</div>
+  <div class="tab" onclick="goTab('method',this)">📐 Metodología</div>
+</div>
+
+<div id="main">
+
+<!-- PROGRESS -->
+<div class="pgWrap" id="pgWrap">
+  <div style="display:flex;justify-content:space-between;font-size:12px;color:#374151">
+    <span id="pgLog">Cargando...</span><span id="pgPct"></span>
+  </div>
+  <div class="pgBar"><div class="pgFill" id="pgFill" style="width:0%;background:#3b5bdb"></div></div>
+</div>
+
+<!-- SOURCES -->
+<div class="srcP">
+  <h3>🔌 Fuentes de datos
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="srcBtn" onclick="loadWorldBankLive()" id="btnWB2">🌐 World Bank Live</button>
+      <button class="srcBtn" onclick="refreshGDELT()" id="btnGdelt">↺ GDELT Live</button>
+    </div>
+  </h3>
+  <div class="srcGrid">
+    <div class="srcItem">
+      <div><div class="srcName">World Bank WGI</div><div class="srcMeta">Gobernanza, Estabilidad, Estado de Derecho, Voz, Cap. Institucional</div></div>
+      <div style="text-align:right"><span class="srcSt s-snap" id="srcWGI">📦 Embebido 2023</span></div>
+    </div>
+    <div class="srcItem">
+      <div><div class="srcName">World Bank WDI</div><div class="srcMeta">GDP, Electricidad, CO₂, Forestal, Desempleo, Alfabetización, Pobreza</div></div>
+      <div style="text-align:right"><span class="srcSt s-snap" id="srcWDI">📦 Embebido 2023</span></div>
+    </div>
+    <div class="srcItem">
+      <div><div class="srcName">TI CPI 2024</div><div class="srcMeta">Índice de Percepción de Corrupción · Transparency International</div></div>
+      <div style="text-align:right"><span class="srcSt s-ok">✅ Embebido 2024</span></div>
+    </div>
+    <div class="srcItem">
+      <div><div class="srcName">Freedom House FIW 2025</div><div class="srcMeta">Libertades civiles y derechos políticos por país</div></div>
+      <div style="text-align:right"><span class="srcSt s-ok">✅ Embebido 2025</span></div>
+    </div>
+    <div class="srcItem">
+      <div><div class="srcName">REST Countries API</div><div class="srcMeta">Capital, idiomas, región, moneda, población · apilayer</div></div>
+      <div style="text-align:right"><span class="srcSt s-snap" id="srcRC">⏳ Pendiente</span><br><button class="srcBtn" onclick="loadRestCountries()">↺ Cargar</button></div>
+    </div>
+    <div class="srcItem">
+      <div><div class="srcName">GDELT Stability API</div><div class="srcMeta">Índice de estabilidad 0–100 en tiempo real</div></div>
+      <div style="text-align:right"><span class="srcSt s-snap" id="srcGdelt">📸 Snapshot</span><br><button class="srcBtn" onclick="refreshGDELT()">↺ Live</button></div>
+    </div>
+    <div class="srcItem">
+      <div><div class="srcName">GDELT DOC API v2</div><div class="srcMeta">Noticias geopolíticas en tiempo real por país</div></div>
+      <div style="text-align:right"><span class="srcSt s-live">🔵 Live al abrir país</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat"><div class="v" id="sT">—</div><div class="l">Países</div></div>
+  <div class="stat"><div class="v" style="color:#166534" id="sL">—</div><div class="l">Riesgo bajo</div></div>
+  <div class="stat"><div class="v" style="color:#854d0e" id="sM">—</div><div class="l">Riesgo medio</div></div>
+  <div class="stat"><div class="v" style="color:#991b1b" id="sH">—</div><div class="l">Riesgo alto</div></div>
+  <div class="stat"><div class="v" style="color:#dc2626" id="sC">—</div><div class="l">⚠ Conflicto</div></div>
+  <div class="stat"><div class="v" style="color:#6d28d9;font-size:13px" id="sWB">—</div><div class="l">Fuente WB</div></div>
+</div>
+
+<!-- ALERTS -->
+<div class="ab" id="ab" style="display:none"><h3>⚠ Países con conflicto activo o riesgo extremo</h3><div class="at" id="at"></div></div>
+
+<!-- MAP -->
+<div id="tab-map">
+  <div id="mapWrap"><div id="mapMsg">Cargando mapa...</div><div class="mt" id="mt"></div></div>
+  <div class="leg">
+    <span><i style="background:#7f1d1d"></i>⚠ Conflicto</span>
+    <span><i style="background:#dc2626"></i>Alto &lt;40</span>
+    <span><i style="background:#f97316"></i>Med-alto 40–54</span>
+    <span><i style="background:#eab308"></i>Medio 55–64</span>
+    <span><i style="background:#22c55e"></i>Bajo ≥65</span>
+    <span><i style="background:#cbd5e1"></i>Sin datos</span>
+  </div>
+</div>
+
+<!-- TABLE -->
+<div id="tab-table" style="display:none">
+  <div class="tw">
+    <div class="tb">
+      <input id="srch" placeholder="Filtrar países..." oninput="renderTable()"/>
+      <button class="sb" onclick="expCSV()">⬇ CSV</button>
+      <span id="tcnt" style="font-size:11px;color:#6b7280"></span>
+    </div>
+    <div class="ts"><table><thead><tr id="th"></tr></thead><tbody id="tb2"></tbody></table></div>
+  </div>
+</div>
+
+<!-- UPDATE -->
+<div id="tab-update" style="display:none">
+  <div class="upPanel">
+    <h3>📥 Fuentes de datos — Estado y actualización</h3>
+
+    <div class="upSection">
+      <h4>🌐 World Bank API — Carga en vivo automática</h4>
+      <p>La app puede sustituir los datos WGI y WDI embebidos por datos reales del Banco Mundial. Sin clave, totalmente gratuito.</p>
+      <ol class="steps">
+        <li data-n="1">Haz clic en <b>"🌐 Cargar WB Live"</b> en el header o abajo. La app llama a <code>api.worldbank.org/v2/</code> y descarga los 7 indicadores WGI + 7 indicadores WDI para todos los países</li>
+        <li data-n="2">El proceso tarda ~30–60 segundos (paginación automática). El mapa se actualiza en tiempo real según llegan los datos</li>
+        <li data-n="3">El indicador "Fuente WB" en el panel superior cambia de <b>Embebido</b> a <b>Live XXXX</b> cuando termina</li>
+        <li data-n="4">Si falla la conexión, los datos embebidos siguen activos como fallback</li>
+      </ol>
+      <div class="upBtns">
+        <button class="upBtn upBtn-p" onclick="loadWorldBankLive()">🌐 Cargar World Bank Live</button>
+      </div>
+      <div class="upResult" id="wbResult"></div>
+    </div>
+
+    <div class="upSection">
+      <h4>🌍 REST Countries API — Datos de país enriquecidos</h4>
+      <p>Carga capital, idiomas, moneda, región y banderas de cada país desde <code>restcountries.com/v3.1/all</code>. Sin clave.</p>
+      <ol class="steps">
+        <li data-n="1">Haz clic en <b>"↺ Cargar REST Countries"</b></li>
+        <li data-n="2">Se descargan ~250 países en una sola petición (JSON ~2MB)</li>
+        <li data-n="3">Los datos aparecen en el modal de cada país (capital, idioma, moneda…)</li>
+      </ol>
+      <div class="upBtns">
+        <button class="upBtn upBtn-p" onclick="loadRestCountries()">🌍 Cargar REST Countries</button>
+      </div>
+      <div class="upResult" id="rcResult"></div>
+    </div>
+
+    <div class="upSection">
+      <h4>🏛 WGI — Actualización manual (CSV)</h4>
+      <p>Fuente: <a href="https://www.worldbank.org/en/publication/worldwide-governance-indicators" target="_blank">worldbank.org → Worldwide Governance Indicators</a></p>
+      <ol class="steps">
+        <li data-n="1">Descarga el archivo <b>Excel</b> desde la sección "Download the data"</li>
+        <li data-n="2">Pestaña <b>"WGIData"</b> → filtra el año más reciente → columnas <code>Code, PV.EST, GE.EST, CC.EST, RL.EST, VA.EST, RQ.EST</code></li>
+        <li data-n="3">Copia como CSV en el formato indicado y pega abajo</li>
+      </ol>
+      <p style="margin-top:4px">Formato: <code>ISO2,PV,GE,CC,RL,VA,RQ</code></p>
+      <textarea id="wgiPaste" placeholder="ES,0.40,1.03,0.76,1.07,1.13,1.09&#10;FR,0.41,1.38,1.42,1.39,1.08,1.22"></textarea>
+      <div class="upBtns">
+        <button class="upBtn upBtn-g" onclick="applyWGI()">✅ Aplicar WGI</button>
+        <button class="upBtn" onclick="exportCurrentWGI()">⬇ Exportar actual</button>
+      </div>
+      <div class="upResult" id="wgiResult"></div>
+    </div>
+
+    <div class="upSection">
+      <h4>📊 WDI — Actualización manual (CSV)</h4>
+      <p>Fuente: <a href="https://databank.worldbank.org/source/world-development-indicators" target="_blank">databank.worldbank.org → World Development Indicators</a></p>
+      <ol class="steps">
+        <li data-n="1">Selecciona <b>Country: All</b> · Series: <code>NY.GDP.PCAP.PP.KD, EG.ELC.ACCS.ZS, EN.ATM.CO2E.PC, AG.LND.FRST.ZS, SL.UEM.TOTL.ZS, SE.ADT.LITR.ZS, SI.POV.NAHC</code></li>
+        <li data-n="2">Time: año más reciente · Download → CSV</li>
+      </ol>
+      <p style="margin-top:4px">Formato: <code>ISO2,GDP,EL,CO2,FR,UN,LIT,POV</code></p>
+      <textarea id="wdiPaste" placeholder="ES,46413,100,5.1,37,11.8,98,3&#10;FR,52449,100,4.6,31,7.3,99,1"></textarea>
+      <div class="upBtns">
+        <button class="upBtn upBtn-g" onclick="applyWDI()">✅ Aplicar WDI</button>
+        <button class="upBtn" onclick="exportCurrentWDI()">⬇ Exportar actual</button>
+      </div>
+      <div class="upResult" id="wdiResult"></div>
+    </div>
+
+    <div class="upSection">
+      <h4>🔍 CPI · 🗽 Freedom House — Manual</h4>
+      <p><b>CPI</b>: <a href="https://www.transparency.org/en/cpi" target="_blank">transparency.org/en/cpi</a> → "Download the data" → Excel → columnas ISO2 + CPI score</p>
+      <textarea id="cpiPaste" placeholder="ISO2,CPI&#10;ES,57&#10;FR,70" style="height:80px"></textarea>
+      <div class="upBtns">
+        <button class="upBtn upBtn-g" onclick="applyCPI()">✅ Aplicar CPI</button>
+      </div>
+      <div class="upResult" id="cpiResult"></div>
+      <p style="margin-top:10px"><b>Freedom House</b>: <a href="https://freedomhouse.org/report/freedom-world" target="_blank">freedomhouse.org</a> → "Download data" → Excel → columna CL (1 libre – 7 no libre)</p>
+      <textarea id="fhPaste" placeholder="ISO2,CL&#10;ES,2&#10;FR,2" style="height:80px"></textarea>
+      <div class="upBtns">
+        <button class="upBtn upBtn-g" onclick="applyFH()">✅ Aplicar FH</button>
+      </div>
+      <div class="upResult" id="fhResult"></div>
+    </div>
+
+    <div class="upSection">
+      <h4>⚡ GDELT — Snapshot manual</h4>
+      <p>Formato: <code>ISO2,instability</code> (0–0.20, mayor = más inestable)</p>
+      <textarea id="gdeltPaste" placeholder="UA,0.172&#10;RU,0.094" style="height:80px"></textarea>
+      <div class="upBtns">
+        <button class="upBtn upBtn-g" onclick="applyGDELT()">✅ Aplicar GDELT</button>
+        <button class="upBtn" onclick="exportCurrentGDELT()">⬇ Exportar actual</button>
+      </div>
+      <div class="upResult" id="gdeltResult"></div>
+    </div>
+  </div>
+</div>
+
+<!-- METHOD -->
+<div id="tab-method" style="display:none">
+  <div class="meth">
+    <h2>📐 Metodología — Scoring Geopolítico Auditable v2</h2>
+    <p style="color:#555;font-size:13px;margin-bottom:10px">Sin IA generativa en el scoring. Fórmula determinista con pesos fijos. Datos live cuando están disponibles, embebidos como fallback.</p>
+    <h3>Fuentes de datos (jerarquía)</h3>
+    <table><tr><th>Fuente</th><th>Tipo</th><th>Prioridad</th><th>Datos</th></tr>
+      <tr><td>World Bank API Live</td><td>🌐 Live</td><td>1ª (si disponible)</td><td>WGI 6 indicadores + WDI 7 indicadores</td></tr>
+      <tr><td>REST Countries API</td><td>🌐 Live</td><td>1ª (si disponible)</td><td>Capital, idioma, moneda, región, bandera</td></tr>
+      <tr><td>GDELT Stability API</td><td>🌐 Live</td><td>1ª (si disponible)</td><td>Inestabilidad diaria + histórico 14d</td></tr>
+      <tr><td>TI CPI 2024</td><td>📦 Embebido</td><td>Siempre activo</td><td>Percepción de corrupción</td></tr>
+      <tr><td>Freedom House 2025</td><td>📦 Embebido</td><td>Siempre activo</td><td>Libertades civiles</td></tr>
+      <tr><td>WGI/WDI embebido 2023</td><td>📦 Fallback</td><td>Si WB Live falla</td><td>Todos los indicadores base</td></tr>
+    </table>
+    <h3>Índice de Estabilidad GDELT (0–100)</h3>
+    <p style="font-size:12px;color:#555">Estabilidad = max(0, 100 − instabilidad × 500). Rango: 0 (crisis) → 100 (máxima calma).</p>
+    <h3>Fórmula CountryScore</h3>
+    <div class="fb">
+CountryScore = Σ(variable_i × peso_i) / Σ(pesos disponibles)
+
+Penalización GDELT:
+  instabilidad > 0.08 → × 0.40   (guerra abierta)
+  instabilidad > 0.04 → × 0.65   (conflicto activo)
+  instabilidad > 0.02 → × 0.85   (tensión)
+    </div>
+    <h3>Pesos de variables</h3>
+    <table><tr><th>Variable</th><th>Fuente</th><th>Peso</th></tr>
+      <tr><td>Estabilidad política</td><td>WGI PV.EST + GDELT</td><td>0.20</td></tr>
+      <tr><td>Gobernanza</td><td>WGI GE.EST</td><td>0.10</td></tr>
+      <tr><td>Corrupción</td><td>TI CPI 2024</td><td>0.10</td></tr>
+      <tr><td>Estado de Derecho</td><td>WGI RL.EST</td><td>0.08</td></tr>
+      <tr><td>Libertades Civiles</td><td>Freedom House CL</td><td>0.08</td></tr>
+      <tr><td>Voz y Rendición</td><td>WGI VA.EST</td><td>0.06</td></tr>
+      <tr><td>Cap. Institucional</td><td>WGI RQ.EST</td><td>0.06</td></tr>
+      <tr><td>Financiero (GDP)</td><td>WDI NY.GDP.PCAP.PP.KD</td><td>0.08</td></tr>
+      <tr><td>Capital Humano</td><td>WDI SE.ADT.LITR.ZS</td><td>0.05</td></tr>
+      <tr><td>Infraestructura</td><td>WDI EG.ELC.ACCS.ZS</td><td>0.04</td></tr>
+      <tr><td>Cond. Laborales</td><td>WDI SL.UEM.TOTL.ZS</td><td>0.04</td></tr>
+      <tr><td>Vulnerab. Social</td><td>WDI SI.POV.NAHC</td><td>0.04</td></tr>
+      <tr><td>Ambiental CO₂</td><td>WDI EN.ATM.CO2E.PC</td><td>0.03</td></tr>
+      <tr><td>Biodiversidad</td><td>WDI AG.LND.FRST.ZS</td><td>0.02</td></tr>
+    </table>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- MODAL -->
+<div id="ov" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <div class="mh" id="mh"></div>
+    <div class="mb" id="mb"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// STATIC FALLBACK DATA
+// ══════════════════════════════════════════════════════════════
+let WGI={AF:{PV:-2.72,GE:-1.63,CC:-1.56,RL:-2.28,VA:-1.84,RQ:-1.72},AL:{PV:-0.10,GE:-0.13,CC:-0.57,RL:-0.32,VA:0.14,RQ:-0.16},DZ:{PV:-0.72,GE:-0.50,CC:-0.79,RL:-0.71,VA:-1.41,RQ:-0.68},AO:{PV:-0.13,GE:-0.72,CC:-1.13,RL:-0.86,VA:-0.94,RQ:-0.76},AR:{PV:-0.16,GE:-0.14,CC:-0.49,RL:-0.56,VA:0.34,RQ:-0.37},AM:{PV:-0.47,GE:-0.02,CC:-0.48,RL:-0.19,VA:-0.68,RQ:-0.12},AU:{PV:0.93,GE:1.72,CC:1.81,RL:1.79,VA:1.38,RQ:1.83},AT:{PV:1.04,GE:1.53,CC:1.63,RL:1.77,VA:1.34,RQ:1.61},AZ:{PV:-0.40,GE:-0.03,CC:-0.85,RL:-0.70,VA:-1.55,RQ:-0.27},BD:{PV:-1.08,GE:-0.55,CC:-1.03,RL:-1.01,VA:-1.07,RQ:-0.50},BY:{PV:-0.35,GE:-0.14,CC:-0.72,RL:-0.98,VA:-1.84,RQ:-0.58},BE:{PV:0.58,GE:1.26,CC:1.46,RL:1.35,VA:1.27,RQ:1.36},BJ:{PV:-0.07,GE:-0.34,CC:-0.37,RL:-0.27,VA:0.21,RQ:-0.18},BO:{PV:-0.46,GE:-0.52,CC:-0.61,RL:-0.69,VA:0.04,RQ:-0.71},BA:{PV:-0.31,GE:-0.34,CC:-0.54,RL:-0.26,VA:-0.15,RQ:-0.11},BW:{PV:0.73,GE:0.57,CC:0.64,RL:0.66,VA:0.47,RQ:0.49},BR:{PV:-0.21,GE:-0.13,CC:-0.32,RL:-0.18,VA:0.41,RQ:0.02},BG:{PV:0.26,GE:0.11,CC:-0.07,RL:0.08,VA:0.65,RQ:0.27},BF:{PV:-2.14,GE:-0.83,CC:-0.63,RL:-1.15,VA:-0.89,RQ:-0.67},BI:{PV:-1.41,GE:-1.13,CC:-1.18,RL:-1.44,VA:-1.39,RQ:-1.21},KH:{PV:-0.26,GE:-0.44,CC:-1.13,RL:-0.99,VA:-1.48,RQ:-0.51},CM:{PV:-1.12,GE:-0.63,CC:-1.00,RL:-0.94,VA:-0.87,RQ:-0.71},CA:{PV:0.87,GE:1.80,CC:2.05,RL:1.82,VA:1.40,RQ:1.79},CF:{PV:-2.64,GE:-1.72,CC:-1.49,RL:-2.00,VA:-1.50,RQ:-1.65},TD:{PV:-1.83,GE:-1.29,CC:-1.49,RL:-1.47,VA:-1.46,RQ:-1.35},CL:{PV:0.61,GE:1.05,CC:1.19,RL:1.27,VA:0.87,RQ:1.24},CN:{PV:0.04,GE:0.43,CC:-0.30,RL:-0.29,VA:-1.65,RQ:0.35},CO:{PV:-1.30,GE:-0.15,CC:-0.44,RL:-0.50,VA:-0.33,RQ:0.01},CD:{PV:-2.40,GE:-1.62,CC:-1.68,RL:-2.05,VA:-1.27,RQ:-1.68},CG:{PV:-0.53,GE:-0.87,CC:-1.23,RL:-0.97,VA:-1.17,RQ:-0.89},CR:{PV:0.49,GE:0.23,CC:0.34,RL:0.48,VA:1.01,RQ:0.56},HR:{PV:0.66,GE:0.46,CC:0.09,RL:0.41,VA:0.77,RQ:0.60},CU:{PV:0.32,GE:-0.14,CC:-0.59,RL:-0.81,VA:-1.84,RQ:-0.43},CZ:{PV:0.93,GE:1.09,CC:0.56,RL:1.03,VA:1.01,RQ:1.10},DK:{PV:0.90,GE:2.09,CC:2.24,RL:1.94,VA:1.52,RQ:1.92},EG:{PV:-0.80,GE:-0.37,CC:-0.65,RL:-0.76,VA:-1.52,RQ:-0.32},SV:{PV:-0.64,GE:-0.29,CC:-0.71,RL:-0.64,VA:-0.24,RQ:-0.17},ET:{PV:-1.36,GE:-0.67,CC:-0.76,RL:-0.90,VA:-1.24,RQ:-0.64},FI:{PV:1.07,GE:2.05,CC:2.24,RL:2.01,VA:1.46,RQ:1.94},FR:{PV:0.41,GE:1.38,CC:1.42,RL:1.39,VA:1.08,RQ:1.22},GE:{PV:-0.45,GE:0.08,CC:0.04,RL:0.22,VA:-0.17,RQ:0.55},DE:{PV:0.65,GE:1.62,CC:1.83,RL:1.71,VA:1.31,RQ:1.60},GH:{PV:-0.04,GE:-0.05,CC:-0.28,RL:0.04,VA:0.61,RQ:-0.04},GR:{PV:0.46,GE:0.46,CC:0.00,RL:0.79,VA:0.98,RQ:0.44},GT:{PV:-0.83,GE:-0.64,CC:-0.93,RL:-1.01,VA:-0.24,RQ:-0.53},HT:{PV:-2.29,GE:-1.72,CC:-1.62,RL:-1.96,VA:-0.88,RQ:-1.69},HN:{PV:-0.84,GE:-0.73,CC:-0.96,RL:-1.13,VA:-0.39,RQ:-0.64},HU:{PV:0.50,GE:0.63,CC:-0.13,RL:0.34,VA:-0.06,RQ:0.80},IN:{PV:-1.00,GE:0.11,CC:-0.45,RL:-0.12,VA:0.11,RQ:-0.13},ID:{PV:-0.86,GE:-0.14,CC:-0.56,RL:-0.47,VA:0.09,RQ:0.22},IR:{PV:-1.12,GE:-0.89,CC:-1.00,RL:-1.18,VA:-1.79,RQ:-1.31},IQ:{PV:-2.13,GE:-1.22,CC:-1.44,RL:-1.46,VA:-0.95,RQ:-1.19},IE:{PV:0.96,GE:1.53,CC:1.65,RL:1.65,VA:1.27,RQ:1.77},IL:{PV:-0.96,GE:1.22,CC:0.97,RL:1.07,VA:0.79,RQ:1.36},IT:{PV:0.44,GE:0.46,CC:0.19,RL:0.72,VA:0.99,RQ:0.90},JP:{PV:0.89,GE:1.55,CC:1.55,RL:1.60,VA:1.02,RQ:1.31},JO:{PV:-0.36,GE:0.15,CC:-0.09,RL:0.22,VA:-0.89,RQ:0.27},KZ:{PV:-0.33,GE:-0.06,CC:-0.77,RL:-0.60,VA:-1.47,RQ:-0.18},KE:{PV:-0.85,GE:-0.43,CC:-0.91,RL:-0.68,VA:0.19,RQ:-0.12},KP:{PV:-1.15,GE:-1.82,CC:-1.68,RL:-2.18,VA:-2.17,RQ:-2.01},LA:{PV:-0.34,GE:-0.71,CC:-1.17,RL:-0.87,VA:-1.69,RQ:-0.73},LV:{PV:0.80,GE:0.90,CC:0.45,RL:0.95,VA:1.05,RQ:1.09},LB:{PV:-1.13,GE:-1.35,CC:-1.16,RL:-0.89,VA:-0.49,RQ:-1.09},LY:{PV:-2.14,GE:-1.54,CC:-1.52,RL:-1.70,VA:-1.36,RQ:-1.57},LT:{PV:0.79,GE:0.96,CC:0.55,RL:1.01,VA:1.02,RQ:1.17},MY:{PV:0.08,GE:0.98,CC:-0.01,RL:0.49,VA:-0.38,RQ:0.66},ML:{PV:-1.96,GE:-0.96,CC:-0.82,RL:-0.96,VA:-0.79,RQ:-0.85},MX:{PV:-1.04,GE:-0.06,CC:-0.69,RL:-0.88,VA:0.20,RQ:0.12},MD:{PV:-0.31,GE:-0.37,CC:-0.51,RL:-0.24,VA:-0.05,RQ:-0.14},MN:{PV:0.13,GE:-0.49,CC:-0.75,RL:-0.30,VA:0.31,RQ:-0.27},ME:{PV:-0.19,GE:-0.06,CC:-0.30,RL:0.03,VA:-0.09,RQ:0.19},MA:{PV:-0.77,GE:-0.04,CC:-0.40,RL:-0.12,VA:-0.77,RQ:0.07},MZ:{PV:-0.96,GE:-0.70,CC:-0.94,RL:-0.77,VA:-0.32,RQ:-0.61},MM:{PV:-2.00,GE:-1.11,CC:-1.45,RL:-1.42,VA:-1.83,RQ:-1.28},NP:{PV:-0.82,GE:-0.70,CC:-0.91,RL:-0.62,VA:0.07,RQ:-0.55},NL:{PV:0.76,GE:1.82,CC:1.95,RL:1.80,VA:1.44,RQ:1.82},NZ:{PV:1.22,GE:1.96,CC:2.21,RL:1.97,VA:1.55,RQ:1.95},NI:{PV:-0.28,GE:-0.89,CC:-0.90,RL:-1.05,VA:-1.54,RQ:-0.88},NE:{PV:-1.52,GE:-1.14,CC:-0.93,RL:-0.93,VA:-0.57,RQ:-0.99},NG:{PV:-2.05,GE:-1.00,CC:-1.19,RL:-1.24,VA:-0.35,RQ:-0.85},NO:{PV:1.03,GE:1.97,CC:2.16,RL:1.94,VA:1.55,RQ:1.82},PK:{PV:-2.32,GE:-0.64,CC:-0.96,RL:-0.80,VA:-0.93,RQ:-0.68},PA:{PV:0.19,GE:0.05,CC:-0.35,RL:0.16,VA:0.73,RQ:0.34},PY:{PV:-0.02,GE:-0.47,CC:-0.90,RL:-0.71,VA:0.20,RQ:-0.23},PE:{PV:-0.61,GE:-0.28,CC:-0.61,RL:-0.38,VA:0.10,RQ:0.00},PH:{PV:-1.34,GE:-0.03,CC:-0.56,RL:-0.54,VA:-0.15,RQ:0.01},PL:{PV:0.61,GE:0.74,CC:0.42,RL:0.37,VA:0.79,RQ:0.97},PT:{PV:1.11,GE:1.08,CC:1.02,RL:1.18,VA:1.21,RQ:1.10},RO:{PV:0.38,GE:0.14,CC:-0.20,RL:0.21,VA:0.68,RQ:0.37},RU:{PV:-1.30,GE:-0.21,CC:-1.04,RL:-0.95,VA:-1.38,RQ:-0.50},SA:{PV:-0.56,GE:0.31,CC:-0.23,RL:0.17,VA:-1.85,RQ:0.17},SN:{PV:-0.35,GE:-0.27,CC:-0.28,RL:-0.07,VA:0.46,RQ:-0.13},RS:{PV:-0.14,GE:-0.18,CC:-0.43,RL:-0.15,VA:-0.10,RQ:0.15},SG:{PV:1.14,GE:2.14,CC:2.11,RL:1.88,VA:-0.56,RQ:2.21},SK:{PV:0.79,GE:0.62,CC:0.01,RL:0.71,VA:0.93,RQ:0.91},SI:{PV:0.98,GE:0.99,CC:0.79,RL:0.98,VA:1.08,RQ:1.07},SO:{PV:-2.74,GE:-2.12,CC:-1.80,RL:-2.47,VA:-1.55,RQ:-2.05},ZA:{PV:-0.79,GE:0.07,CC:-0.56,RL:0.14,VA:0.81,RQ:0.19},KR:{PV:0.35,GE:1.09,CC:0.53,RL:1.00,VA:0.74,RQ:1.01},SS:{PV:-2.60,GE:-1.82,CC:-1.64,RL:-2.09,VA:-1.40,RQ:-1.78},ES:{PV:0.40,GE:1.03,CC:0.76,RL:1.07,VA:1.13,RQ:1.09},LK:{PV:-0.58,GE:-0.41,CC:-0.72,RL:-0.37,VA:-0.38,RQ:-0.43},SD:{PV:-2.25,GE:-1.47,CC:-1.46,RL:-1.63,VA:-1.64,RQ:-1.54},SE:{PV:1.03,GE:2.01,CC:2.27,RL:1.97,VA:1.48,RQ:1.90},CH:{PV:1.09,GE:2.02,CC:2.16,RL:1.90,VA:1.42,RQ:1.94},SY:{PV:-2.72,GE:-1.64,CC:-1.44,RL:-1.95,VA:-1.87,RQ:-1.73},TW:{PV:0.62,GE:1.25,CC:0.97,RL:1.04,VA:0.78,RQ:1.24},TZ:{PV:-0.41,GE:-0.35,CC:-0.72,RL:-0.46,VA:-0.73,RQ:-0.39},TH:{PV:-0.72,GE:0.22,CC:-0.43,RL:0.04,VA:-0.89,RQ:0.29},TN:{PV:-0.65,GE:-0.37,CC:-0.45,RL:-0.35,VA:-0.95,RQ:-0.23},TR:{PV:-1.37,GE:0.19,CC:-0.35,RL:-0.44,VA:-0.78,RQ:0.12},UG:{PV:-1.22,GE:-0.56,CC:-0.96,RL:-0.68,VA:-0.96,RQ:-0.68},UA:{PV:-2.06,GE:-0.45,CC:-0.79,RL:-0.48,VA:0.09,RQ:-0.25},AE:{PV:0.24,GE:1.24,CC:0.82,RL:0.65,VA:-1.41,RQ:1.23},GB:{PV:0.46,GE:1.57,CC:1.54,RL:1.68,VA:1.17,RQ:1.58},US:{PV:0.20,GE:1.46,CC:1.25,RL:1.43,VA:1.10,RQ:1.52},UY:{PV:0.66,GE:0.50,CC:0.89,RL:0.81,VA:1.09,RQ:0.83},VE:{PV:-1.80,GE:-1.55,CC:-1.67,RL:-1.88,VA:-1.66,RQ:-1.72},VN:{PV:-0.22,GE:-0.11,CC:-0.60,RL:-0.55,VA:-1.57,RQ:0.00},YE:{PV:-2.68,GE:-1.79,CC:-1.34,RL:-1.80,VA:-1.50,RQ:-1.58},ZM:{PV:-0.13,GE:-0.51,CC:-0.68,RL:-0.36,VA:0.17,RQ:-0.31},ZW:{PV:-1.17,GE:-1.04,CC:-1.17,RL:-0.98,VA:-0.97,RQ:-1.10}};
+let WDI={AF:{GDP:1516,EL:89,CO2:0.19,FR:2,UN:11.1,LIT:37,POV:55},AL:{GDP:16847,EL:100,CO2:1.9,FR:28,UN:11.8,LIT:98,POV:14},DZ:{GDP:11730,EL:99,CO2:3.8,FR:0.8,UN:11.7,LIT:81,POV:6},AO:{GDP:7595,EL:47,CO2:0.57,FR:46,UN:6.6,LIT:66,POV:32},AR:{GDP:23374,EL:100,CO2:4.1,FR:10,UN:6.2,LIT:99,POV:9},AM:{GDP:16285,EL:100,CO2:2.0,FR:11,UN:13.6,LIT:99,POV:27},AU:{GDP:58625,EL:100,CO2:14.8,FR:17,UN:3.7,LIT:99,POV:1},AT:{GDP:63585,EL:100,CO2:7.5,FR:47,UN:4.8,LIT:99,POV:1},AZ:{GDP:17530,EL:100,CO2:3.8,FR:11,UN:5.6,LIT:99,POV:5},BD:{GDP:7651,EL:97,CO2:0.61,FR:11,UN:5.1,LIT:74,POV:19},BY:{GDP:23062,EL:100,CO2:5.9,FR:42,UN:3.9,LIT:99,POV:1},BE:{GDP:59661,EL:100,CO2:8.1,FR:23,UN:5.5,LIT:99,POV:1},BJ:{GDP:4092,EL:45,CO2:0.58,FR:42,UN:1.5,LIT:45,POV:38},BO:{GDP:9283,EL:96,CO2:1.8,FR:51,UN:4.4,LIT:92,POV:14},BA:{GDP:18196,EL:100,CO2:5.7,FR:43,UN:12.9,LIT:98,POV:4},BW:{GDP:17742,EL:72,CO2:3.3,FR:20,UN:23.4,LIT:88,POV:16},BR:{GDP:16928,EL:99,CO2:2.2,FR:59,UN:7.8,LIT:93,POV:6},BG:{GDP:27993,EL:100,CO2:6.0,FR:36,UN:4.5,LIT:98,POV:3},BF:{GDP:2529,EL:22,CO2:0.23,FR:20,UN:5.5,LIT:46,POV:43},BI:{GDP:746,EL:11,CO2:0.06,FR:11,UN:1.5,LIT:68,POV:72},KH:{GDP:4795,EL:90,CO2:1.0,FR:46,UN:0.2,LIT:80,POV:17},CM:{GDP:4019,EL:66,CO2:0.38,FR:42,UN:3.6,LIT:77,POV:37},CA:{GDP:56843,EL:100,CO2:15.3,FR:38,UN:5.4,LIT:99,POV:1},CF:{GDP:1142,EL:14,CO2:0.07,FR:36,UN:7.0,LIT:37,POV:71},TD:{GDP:1603,EL:12,CO2:0.09,FR:9,UN:2.3,LIT:22,POV:42},CL:{GDP:27042,EL:100,CO2:4.7,FR:23,UN:8.6,LIT:96,POV:3},CN:{GDP:21464,EL:100,CO2:8.0,FR:23,UN:5.2,LIT:97,POV:1},CO:{GDP:17073,EL:100,CO2:1.7,FR:59,UN:10.2,LIT:95,POV:13},CD:{GDP:1561,EL:21,CO2:0.05,FR:56,UN:4.5,LIT:77,POV:62},CG:{GDP:7190,EL:47,CO2:0.87,FR:65,UN:11.2,LIT:80,POV:40},CR:{GDP:24071,EL:100,CO2:1.6,FR:58,UN:8.0,LIT:98,POV:4},HR:{GDP:36547,EL:100,CO2:4.0,FR:34,UN:6.1,LIT:99,POV:2},CU:{GDP:9000,EL:99,CO2:1.6,FR:32,UN:1.3,LIT:99,POV:4},CZ:{GDP:47440,EL:100,CO2:8.7,FR:34,UN:2.6,LIT:99,POV:1},DK:{GDP:67218,EL:100,CO2:5.4,FR:14,UN:5.0,LIT:99,POV:1},EG:{GDP:13919,EL:100,CO2:2.5,FR:1,UN:7.2,LIT:71,POV:30},SV:{GDP:10022,EL:95,CO2:1.2,FR:14,UN:4.3,LIT:89,POV:12},ET:{GDP:2769,EL:45,CO2:0.13,FR:15,UN:3.6,LIT:51,POV:31},FI:{GDP:54953,EL:100,CO2:6.6,FR:73,UN:7.4,LIT:99,POV:1},FR:{GDP:52449,EL:100,CO2:4.6,FR:31,UN:7.3,LIT:99,POV:1},GE:{GDP:18249,EL:100,CO2:2.8,FR:40,UN:17.6,LIT:99,POV:15},DE:{GDP:58114,EL:100,CO2:8.1,FR:33,UN:3.1,LIT:99,POV:1},GH:{GDP:6701,EL:84,CO2:0.53,FR:41,UN:3.9,LIT:79,POV:13},GR:{GDP:33540,EL:100,CO2:5.3,FR:31,UN:11.0,LIT:97,POV:5},GT:{GDP:10105,EL:93,CO2:1.0,FR:33,UN:2.5,LIT:83,POV:22},HT:{GDP:3017,EL:47,CO2:0.23,FR:3,UN:14.6,LIT:61,POV:59},HN:{GDP:6555,EL:92,CO2:1.1,FR:41,UN:5.2,LIT:88,POV:23},HU:{GDP:37470,EL:100,CO2:4.5,FR:22,UN:4.1,LIT:99,POV:2},IN:{GDP:9183,EL:99,CO2:1.9,FR:24,UN:4.2,LIT:74,POV:10},ID:{GDP:13362,EL:98,CO2:2.3,FR:56,UN:5.3,LIT:96,POV:10},IR:{GDP:14264,EL:100,CO2:8.0,FR:7,UN:8.6,LIT:85,POV:10},IQ:{GDP:10067,EL:93,CO2:4.5,FR:2,UN:15.6,LIT:85,POV:25},IE:{GDP:102390,EL:100,CO2:8.3,FR:11,UN:4.4,LIT:99,POV:1},IL:{GDP:48427,EL:100,CO2:6.7,FR:7,UN:3.5,LIT:97,POV:5},IT:{GDP:45867,EL:100,CO2:5.3,FR:31,UN:6.7,LIT:99,POV:2},JP:{GDP:43717,EL:100,CO2:8.5,FR:68,UN:2.6,LIT:99,POV:2},JO:{GDP:11434,EL:100,CO2:2.3,FR:1,UN:21.9,LIT:98,POV:15},KZ:{GDP:29178,EL:100,CO2:13.8,FR:1,UN:4.9,LIT:99,POV:1},KE:{GDP:5892,EL:76,CO2:0.38,FR:7,UN:5.4,LIT:82,POV:36},KP:{GDP:1700,EL:26,CO2:2.3,FR:47,UN:5.2,LIT:99,POV:42},LA:{GDP:7932,EL:97,CO2:2.2,FR:82,UN:1.1,LIT:85,POV:19},LV:{GDP:35618,EL:100,CO2:3.8,FR:54,UN:6.4,LIT:99,POV:2},LB:{GDP:10000,EL:99,CO2:3.7,FR:14,UN:29.6,LIT:95,POV:74},LY:{GDP:15000,EL:70,CO2:8.9,FR:0,UN:19.6,LIT:91,POV:12},LT:{GDP:45073,EL:100,CO2:4.5,FR:35,UN:6.9,LIT:99,POV:2},MY:{GDP:31862,EL:100,CO2:8.3,FR:58,UN:3.5,LIT:95,POV:2},ML:{GDP:2422,EL:52,CO2:0.30,FR:10,UN:6.9,LIT:35,POV:43},MX:{GDP:22219,EL:99,CO2:3.8,FR:34,UN:2.8,LIT:95,POV:16},MD:{GDP:14764,EL:100,CO2:2.0,FR:11,UN:3.4,LIT:99,POV:4},MN:{GDP:14218,EL:86,CO2:7.2,FR:9,UN:5.6,LIT:99,POV:29},ME:{GDP:24571,EL:100,CO2:4.7,FR:62,UN:15.0,LIT:98,POV:5},MA:{GDP:10000,EL:99,CO2:1.9,FR:12,UN:13.0,LIT:73,POV:4},MZ:{GDP:1337,EL:32,CO2:0.23,FR:66,UN:3.7,LIT:63,POV:64},MM:{GDP:3997,EL:71,CO2:0.65,FR:42,UN:2.5,LIT:89,POV:26},NP:{GDP:3821,EL:90,CO2:0.50,FR:45,UN:4.2,LIT:68,POV:16},NL:{GDP:65347,EL:100,CO2:8.3,FR:11,UN:3.7,LIT:99,POV:1},NZ:{GDP:48613,EL:100,CO2:7.2,FR:38,UN:3.7,LIT:99,POV:1},NI:{GDP:6423,EL:91,CO2:0.94,FR:25,UN:4.5,LIT:83,POV:15},NE:{GDP:1380,EL:19,CO2:0.11,FR:1,UN:0.6,LIT:35,POV:40},NG:{GDP:5765,EL:55,CO2:0.59,FR:25,UN:5.3,LIT:62,POV:40},NO:{GDP:82655,EL:100,CO2:8.3,FR:33,UN:3.6,LIT:99,POV:1},PK:{GDP:6034,EL:98,CO2:0.95,FR:5,UN:6.3,LIT:58,POV:24},PA:{GDP:31569,EL:95,CO2:2.7,FR:62,UN:9.4,LIT:95,POV:10},PY:{GDP:14350,EL:99,CO2:1.0,FR:44,UN:5.9,LIT:94,POV:10},PE:{GDP:14009,EL:95,CO2:1.6,FR:57,UN:6.4,LIT:94,POV:9},PH:{GDP:10173,EL:97,CO2:1.2,FR:29,UN:4.4,LIT:98,POV:10},PL:{GDP:38816,EL:100,CO2:7.7,FR:30,UN:3.0,LIT:99,POV:2},PT:{GDP:39025,EL:100,CO2:3.9,FR:36,UN:6.5,LIT:95,POV:2},RO:{GDP:35474,EL:100,CO2:4.1,FR:29,UN:5.5,LIT:99,POV:5},RU:{GDP:31762,EL:100,CO2:12.1,FR:50,UN:3.2,LIT:99,POV:2},SA:{GDP:49008,EL:100,CO2:16.3,FR:1,UN:5.9,LIT:97,POV:1},SN:{GDP:4176,EL:70,CO2:0.67,FR:43,UN:3.1,LIT:52,POV:37},RS:{GDP:24180,EL:100,CO2:6.1,FR:31,UN:9.1,LIT:98,POV:5},SG:{GDP:104031,EL:100,CO2:8.7,FR:23,UN:2.1,LIT:97,POV:1},SK:{GDP:35278,EL:100,CO2:5.7,FR:40,UN:5.8,LIT:99,POV:1},SI:{GDP:44278,EL:100,CO2:6.4,FR:62,UN:3.8,LIT:99,POV:1},SO:{GDP:880,EL:35,CO2:0.05,FR:10,UN:19.5,LIT:40,POV:69},ZA:{GDP:15218,EL:84,CO2:8.6,FR:8,UN:32.9,LIT:95,POV:18},KR:{GDP:47027,EL:100,CO2:12.3,FR:64,UN:2.7,LIT:99,POV:1},SS:{GDP:1125,EL:8,CO2:0.13,FR:11,UN:14.7,LIT:34,POV:82},ES:{GDP:46413,EL:100,CO2:5.1,FR:37,UN:11.8,LIT:98,POV:3},LK:{GDP:13180,EL:100,CO2:0.82,FR:33,UN:5.3,LIT:92,POV:4},SD:{GDP:4265,EL:57,CO2:0.53,FR:11,UN:16.3,LIT:61,POV:46},SE:{GDP:57213,EL:100,CO2:3.6,FR:69,UN:8.5,LIT:99,POV:1},CH:{GDP:77941,EL:100,CO2:4.2,FR:32,UN:4.3,LIT:99,POV:1},SY:{GDP:1700,EL:62,CO2:1.0,FR:3,UN:14.9,LIT:86,POV:69},TW:{GDP:55078,EL:100,CO2:11.5,FR:59,UN:3.6,LIT:98,POV:1},TZ:{GDP:3109,EL:43,CO2:0.20,FR:53,UN:2.6,LIT:78,POV:49},TH:{GDP:19518,EL:99,CO2:4.0,FR:37,UN:1.1,LIT:94,POV:7},TN:{GDP:12071,EL:100,CO2:2.7,FR:7,UN:16.1,LIT:82,POV:3},TR:{GDP:39014,EL:100,CO2:5.5,FR:29,UN:9.7,LIT:96,POV:5},UG:{GDP:2646,EL:44,CO2:0.13,FR:9,UN:1.8,LIT:79,POV:42},UA:{GDP:13399,EL:100,CO2:3.6,FR:16,UN:19.1,LIT:99,POV:2},AE:{GDP:75737,EL:100,CO2:20.4,FR:0,UN:2.7,LIT:97,POV:1},GB:{GDP:48912,EL:100,CO2:5.0,FR:13,UN:4.3,LIT:99,POV:1},US:{GDP:66144,EL:100,CO2:14.9,FR:33,UN:3.7,LIT:99,POV:2},UY:{GDP:25491,EL:100,CO2:2.1,FR:10,UN:8.4,LIT:98,POV:2},VE:{GDP:6000,EL:91,CO2:2.5,FR:52,UN:7.1,LIT:97,POV:45},VN:{GDP:13717,EL:100,CO2:3.3,FR:47,UN:2.0,LIT:95,POV:5},YE:{GDP:1800,EL:51,CO2:0.28,FR:1,UN:17.2,LIT:70,POV:48},ZM:{GDP:4003,EL:47,CO2:0.32,FR:66,UN:11.5,LIT:87,POV:58},ZW:{GDP:2877,EL:49,CO2:0.87,FR:24,UN:7.2,LIT:89,POV:30}};
+let CPI={AF:20,AL:41,DZ:33,AO:28,AR:41,AM:46,AU:77,AT:72,AZ:23,BD:23,BY:21,BE:73,BJ:43,BO:31,BA:38,BW:59,BR:36,BG:43,BF:26,BI:19,KH:21,CM:26,CA:76,CF:20,TD:20,CL:67,CN:42,CO:38,CD:20,CG:21,CR:56,HR:49,CU:17,CZ:56,DK:90,EG:35,SV:31,ET:35,FI:88,FR:70,GE:56,DE:78,GH:43,GR:52,GT:23,HT:17,HN:23,HU:42,IN:38,ID:37,IR:24,IQ:21,IE:76,IL:62,IT:52,JP:73,JO:49,KZ:37,KE:42,KP:7,LA:29,LV:57,LB:23,LY:18,LT:56,MY:50,ML:27,MX:31,MD:42,MN:40,ME:46,MA:38,MZ:26,MM:20,NP:35,NL:79,NZ:83,NI:17,NE:32,NG:25,NO:84,PK:26,PA:35,PY:28,PE:36,PH:33,PL:54,PT:62,RO:46,RU:22,SA:49,SN:43,RS:36,SG:84,SK:51,SI:62,SO:9,ZA:41,KR:57,SS:12,ES:57,LK:34,SD:15,SE:82,CH:82,SY:13,TW:67,TZ:36,TH:35,TN:40,TR:36,UG:26,UA:36,AE:68,GB:71,US:67,UY:73,VE:10,VN:40,YE:16,ZM:33,ZW:23};
+let FH={AF:7,AL:3,DZ:5,AO:5,AR:2,AM:4,AU:1,AT:1,AZ:6,BD:5,BY:7,BE:1,BJ:3,BO:4,BA:4,BW:2,BR:3,BG:3,BF:6,BI:7,KH:6,CM:6,CA:1,CF:7,TD:7,CL:2,CN:7,CO:4,CD:6,CG:6,CR:1,HR:2,CU:7,CZ:2,DK:1,EG:6,SV:4,ET:6,FI:1,FR:2,GE:3,DE:1,GH:2,GR:3,GT:4,HT:5,HN:4,HU:4,IN:4,ID:4,IR:6,IQ:5,IE:1,IL:3,IT:2,JP:2,JO:5,KZ:6,KE:4,KP:7,LA:6,LV:2,LB:5,LY:7,LT:2,MY:4,ML:5,MX:4,MD:3,MN:3,ME:4,MA:5,MZ:4,MM:7,NP:4,NL:1,NZ:1,NI:6,NE:5,NG:5,NO:1,PK:5,PA:2,PY:4,PE:4,PH:4,PL:2,PT:1,RO:3,RU:7,SA:7,SN:3,RS:4,SG:4,SK:2,SI:1,SO:7,ZA:3,KR:2,SS:7,ES:2,LK:4,SD:7,SE:1,CH:1,SY:7,TW:2,TZ:5,TH:5,TN:3,TR:5,UG:6,UA:4,AE:7,GB:2,US:2,UY:2,VE:7,VN:6,YE:7,ZM:4,ZW:6};
+let GDELT_DATA={AF:0.182,IQ:0.141,SY:0.138,YE:0.156,SD:0.167,MM:0.129,ET:0.118,SO:0.151,LY:0.134,PK:0.092,IR:0.088,KP:0.071,HT:0.112,VE:0.078,SS:0.143,CD:0.109,CF:0.131,ML:0.108,BF:0.119,NE:0.096,TD:0.101,NG:0.087,CM:0.082,UA:0.172,RU:0.094,IL:0.108,MX:0.048,CO:0.039,GT:0.031,HN:0.033,IN:0.028,ID:0.021,PH:0.026,TH:0.024,BD:0.022,EG:0.031,MA:0.018,DZ:0.022,TN:0.019,ZA:0.034,KE:0.029,GH:0.019,SN:0.016,TZ:0.018,UG:0.027,TR:0.041,BY:0.019,AZ:0.029,GE:0.023,MD:0.021,BR:0.028,AR:0.022,PE:0.024,BO:0.021,ES:0.008,FR:0.012,DE:0.007,IT:0.009,GB:0.010,PT:0.006,PL:0.011,RO:0.009,HU:0.010,GR:0.013,CZ:0.006,US:0.018,CA:0.008,AU:0.006,NZ:0.005,CN:0.019,JP:0.007,KR:0.009,TW:0.011,VN:0.014,MY:0.010,SE:0.005,NO:0.005,DK:0.005,FI:0.005,CH:0.005,AT:0.005,BE:0.006,NL:0.006,IE:0.006,SG:0.005,KZ:0.018,MN:0.012,LB:0.061,JO:0.019,SA:0.022,AE:0.012,CU:0.028,NI:0.025,SV:0.022,ZM:0.018,ZW:0.031,MZ:0.029,BJ:0.016,KH:0.013,LA:0.011,LK:0.021,NP:0.018,LV:0.007,LT:0.007,SK:0.007,SI:0.006,RS:0.016,ME:0.013,BA:0.015,AL:0.014,BG:0.009,HR:0.008,UY:0.009,PA:0.021,PY:0.018,CL:0.010};
+
+// REST Countries cache
+let RC_DATA={};
+let WB_YEAR='Embebido';
+let GDELT_HISTORY={};
+
+// ══════════════════════════════════════════════════════════════
+// COUNTRY NAMES & MAPS
+// ══════════════════════════════════════════════════════════════
+const N2={AF:'Afghanistan',AL:'Albania',DZ:'Algeria',AO:'Angola',AR:'Argentina',AM:'Armenia',AU:'Australia',AT:'Austria',AZ:'Azerbaijan',BD:'Bangladesh',BY:'Belarus',BE:'Belgium',BJ:'Benin',BO:'Bolivia',BA:'Bosnia',BW:'Botswana',BR:'Brazil',BG:'Bulgaria',BF:'Burkina Faso',BI:'Burundi',KH:'Cambodia',CM:'Cameroon',CA:'Canada',CF:'C. African Rep.',TD:'Chad',CL:'Chile',CN:'China',CO:'Colombia',CD:'DR Congo',CG:'Congo Rep.',CR:'Costa Rica',HR:'Croatia',CU:'Cuba',CZ:'Czech Republic',DK:'Denmark',EG:'Egypt',SV:'El Salvador',ET:'Ethiopia',FI:'Finland',FR:'France',GE:'Georgia',DE:'Germany',GH:'Ghana',GR:'Greece',GT:'Guatemala',HT:'Haiti',HN:'Honduras',HU:'Hungary',IN:'India',ID:'Indonesia',IR:'Iran',IQ:'Iraq',IE:'Ireland',IL:'Israel',IT:'Italy',JP:'Japan',JO:'Jordan',KZ:'Kazakhstan',KE:'Kenya',KP:'North Korea',LA:'Laos',LV:'Latvia',LB:'Lebanon',LY:'Libya',LT:'Lithuania',MY:'Malaysia',ML:'Mali',MX:'Mexico',MD:'Moldova',MN:'Mongolia',ME:'Montenegro',MA:'Morocco',MZ:'Mozambique',MM:'Myanmar',NP:'Nepal',NL:'Netherlands',NZ:'New Zealand',NI:'Nicaragua',NE:'Niger',NG:'Nigeria',NO:'Norway',PK:'Pakistan',PA:'Panama',PY:'Paraguay',PE:'Peru',PH:'Philippines',PL:'Poland',PT:'Portugal',RO:'Romania',RU:'Russia',SA:'Saudi Arabia',SN:'Senegal',RS:'Serbia',SG:'Singapore',SK:'Slovakia',SI:'Slovenia',SO:'Somalia',ZA:'South Africa',KR:'South Korea',SS:'South Sudan',ES:'Spain',LK:'Sri Lanka',SD:'Sudan',SE:'Sweden',CH:'Switzerland',SY:'Syria',TW:'Taiwan',TZ:'Tanzania',TH:'Thailand',TN:'Tunisia',TR:'Turkey',UG:'Uganda',UA:'Ukraine',AE:'UAE',GB:'United Kingdom',US:'United States',UY:'Uruguay',VE:'Venezuela',VN:'Vietnam',YE:'Yemen',ZM:'Zambia',ZW:'Zimbabwe'};
+const NUM2={4:'AF',8:'AL',12:'DZ',24:'AO',32:'AR',51:'AM',36:'AU',40:'AT',31:'AZ',50:'BD',112:'BY',56:'BE',204:'BJ',68:'BO',70:'BA',72:'BW',76:'BR',100:'BG',854:'BF',108:'BI',116:'KH',120:'CM',124:'CA',140:'CF',148:'TD',152:'CL',156:'CN',170:'CO',180:'CD',178:'CG',188:'CR',191:'HR',192:'CU',203:'CZ',208:'DK',818:'EG',222:'SV',231:'ET',246:'FI',250:'FR',268:'GE',276:'DE',288:'GH',300:'GR',320:'GT',332:'HT',340:'HN',348:'HU',356:'IN',360:'ID',364:'IR',368:'IQ',372:'IE',376:'IL',380:'IT',392:'JP',400:'JO',398:'KZ',404:'KE',418:'LA',428:'LV',422:'LB',434:'LY',440:'LT',458:'MY',466:'ML',484:'MX',498:'MD',496:'MN',499:'ME',504:'MA',508:'MZ',104:'MM',524:'NP',528:'NL',554:'NZ',558:'NI',562:'NE',566:'NG',408:'KP',578:'NO',586:'PK',591:'PA',600:'PY',604:'PE',608:'PH',616:'PL',620:'PT',642:'RO',643:'RU',682:'SA',686:'SN',688:'RS',702:'SG',703:'SK',705:'SI',706:'SO',710:'ZA',410:'KR',728:'SS',724:'ES',144:'LK',729:'SD',752:'SE',756:'CH',760:'SY',158:'TW',834:'TZ',764:'TH',788:'TN',792:'TR',800:'UG',804:'UA',784:'AE',826:'GB',840:'US',858:'UY',862:'VE',704:'VN',887:'YE',894:'ZM',716:'ZW'};
+const FIPS={AF:'AF',AL:'AL',DZ:'AG',AO:'AO',AR:'AR',AM:'AM',AU:'AS',AT:'AU',AZ:'AJ',BD:'BG',BY:'BO',BE:'BE',BJ:'BN',BO:'BL',BA:'BK',BR:'BR',BG:'BU',BF:'UV',BI:'BY',KH:'CB',CM:'CM',CA:'CA',CF:'CT',TD:'CD',CL:'CI',CN:'CH',CO:'CO',CD:'CG',CG:'CF',CR:'CS',HR:'HR',CU:'CU',CZ:'EZ',DK:'DA',EG:'EG',SV:'ES',ET:'ET',FI:'FI',FR:'FR',GE:'GG',DE:'GM',GH:'GH',GR:'GR',GT:'GT',HT:'HA',HN:'HO',HU:'HU',IN:'IN',ID:'ID',IR:'IR',IQ:'IZ',IE:'EI',IL:'IS',IT:'IT',JP:'JA',JO:'JO',KZ:'KZ',KE:'KE',LA:'LA',LV:'LG',LB:'LE',LY:'LY',LT:'LH',MY:'MY',ML:'ML',MX:'MX',MD:'MD',MN:'MG',ME:'MJ',MA:'MO',MZ:'MZ',MM:'BM',NP:'NP',NL:'NL',NZ:'NZ',NI:'NU',NE:'NG',NG:'NI',KP:'KN',NO:'NO',PK:'PK',PA:'PM',PY:'PA',PE:'PE',PH:'RP',PL:'PL',PT:'PO',RO:'RO',RU:'RS',SA:'SA',SN:'SG',RS:'RI',SG:'SN',SK:'LO',SI:'SI',SO:'SO',ZA:'SF',KR:'KS',SS:'OD',ES:'SP',LK:'CE',SD:'SU',SE:'SW',CH:'SZ',SY:'SY',TW:'TW',TZ:'TZ',TH:'TH',TN:'TS',TR:'TU',UG:'UG',UA:'UP',AE:'TC',GB:'UK',US:'US',UY:'UY',VE:'VE',VN:'VM',YE:'YM',ZM:'ZA',ZW:'ZI'};
+const CONF=new Set(['AF','IQ','SY','YE','SD','MM','ET','SO','LY','PK','IR','KP','HT','VE','SS','CD','CF','ML','BF','NE','TD','NG','CM','UA','RU']);
+
+// WB indicator codes → local field names
+const WGI_INDS={PV:'PV.EST.NO.SE',GE:'GE.EST.NO.SE',CC:'CC.EST.NO.SE',RL:'RL.EST.NO.SE',VA:'VA.EST.NO.SE',RQ:'RQ.EST.NO.SE'};
+const WDI_INDS={GDP:'NY.GDP.PCAP.PP.KD',EL:'EG.ELC.ACCS.ZS',CO2:'EN.ATM.CO2E.PC',FR:'AG.LND.FRST.ZS',UN:'SL.UEM.TOTL.ZS',LIT:'SE.ADT.LITR.ZS',POV:'SI.POV.NAHC'};
+
+// ══════════════════════════════════════════════════════════════
+// GDELT helpers
+// ══════════════════════════════════════════════════════════════
+function gdeltToKPI(raw){return raw==null?null:Math.max(0,Math.round(100-raw*500));}
+function gdeltLabel(kpi){
+  if(kpi==null)return{emoji:'⬜',label:'Sin datos',sub:'No hay datos GDELT',bg:'#f1f5f9',color:'#475569'};
+  if(kpi>=90)return{emoji:'🟢',label:'Muy estable',sub:'Sin señales de conflicto o tensión',bg:'#f0fdf4',color:'#166534'};
+  if(kpi>=80)return{emoji:'🟡',label:'Estable con tensiones leves',sub:'Situación mayormente tranquila',bg:'#fefce8',color:'#854d0e'};
+  if(kpi>=60)return{emoji:'🟠',label:'Tensión activa',sub:'Conflictividad por encima de lo normal',bg:'#fff7ed',color:'#9a3412'};
+  if(kpi>=40)return{emoji:'🔴',label:'Inestabilidad significativa',sub:'Conflictos o crisis con impacto real',bg:'#fef2f2',color:'#991b1b'};
+  return{emoji:'🆘',label:'Crisis severa / Conflicto armado',sub:'Guerra activa o situación de emergencia',bg:'#450a0a',color:'#fca5a5'};
+}
+
+// ══════════════════════════════════════════════════════════════
+// SCORING
+// ══════════════════════════════════════════════════════════════
+function wn(v){return v==null?null:Math.round(((v+2.5)/5)*100);}
+function nr(v,mn,mx,inv=false){if(v==null)return null;let p=(Math.max(mn,Math.min(mx,v))-mn)/(mx-mn)*100;return Math.round(inv?100-p:p);}
+
+function buildScore(iso){
+  const w=WGI[iso]||{},d=WDI[iso]||{};
+  const PS=wn(w.PV),GV=wn(w.GE),CC=wn(w.CC),RL=wn(w.RL),VA=wn(w.VA),RQ=wn(w.RQ);
+  const FN=nr(d.GDP,500,80000),EL=nr(d.EL,0,100),EN=nr(d.CO2,0,20,true),BIO=nr(d.FR,0,100),WC=nr(d.UN,0,35,true),LIT=nr(d.LIT,20,100),POV=nr(d.POV,0,80,true);
+  const EV=EN!=null&&BIO!=null?Math.round((EN+BIO)/2):EN??BIO;
+  const COR=CPI[iso]??CC;
+  const CL=FH[iso]!=null?Math.round((7-FH[iso])/6*100):null;
+  const socParts=[[CL,.38],[LIT,.25],[WC,.20],[POV,.17]].filter(([v])=>v!=null);
+  const SOC=socParts.length?Math.round(socParts.reduce((a,[v,wt])=>a+v*wt,0)/socParts.reduce((a,[,wt])=>a+wt,0)):null;
+  const parts=[[PS,.20],[GV,.10],[COR,.10],[RL,.08],[CL,.08],[VA,.06],[RQ,.06],[FN,.08],[LIT,.05],[EL,.04],[WC,.04],[POV,.04],[EN,.03],[BIO,.02],[EV,.02]].filter(([v])=>v!=null);
+  let sc=0,wt=0;parts.forEach(([v,pw])=>{sc+=v*pw;wt+=pw;});
+  if(wt<0.25)return null;
+  let cs=Math.round(sc/wt);
+  const g=GDELT_DATA[iso]??null;
+  if(g!=null){if(g>0.08)cs=Math.round(cs*.40);else if(g>0.04)cs=Math.round(cs*.65);else if(g>0.02)cs=Math.round(cs*.85);}
+  cs=Math.max(0,Math.min(100,cs));
+  const isCon=CONF.has(iso)||(g!=null&&g>0.04)||(cs<20);
+  const gKPI=gdeltToKPI(g);
+  return{iso,country:N2[iso]||iso,CountryScore:cs,RL:cs>=65?'low':cs>=40?'medium':'high',isConflict:isCon,
+    PoliticalStability:PS,Governance:GV,Corruption:COR,RuleOfLaw:RL,Voice:VA,InstitutionalCapacity:RQ,
+    CivilLiberties:CL,HumanCapital:LIT,WorkingConditions:WC,SocialVulnerability:POV,Social:SOC,
+    Financial:FN,Infrastructure:EL,Environmental:EN,BiodiversityAndDeforestation:BIO,EnvironmentalVulnerability:EV,
+    GdeltRaw:g,GdeltKPI:gKPI,srcCPI:CPI[iso]!=null?'TI CPI 2024':'WGI CC',srcFH:FH[iso]!=null?'FH 2025':'—',
+    wbLive:false};
+}
+
+// ══════════════════════════════════════════════════════════════
+// WORLD BANK LIVE
+// ══════════════════════════════════════════════════════════════
+let wbLoading=false;
+async function loadWorldBankLive(){
+  if(wbLoading)return;
+  wbLoading=true;
+  ['btnWB','btnWB2'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true;});
+  document.getElementById('srcWGI').className='srcSt s-load';document.getElementById('srcWGI').textContent='⏳ Cargando WB...';
+  document.getElementById('srcWDI').className='srcSt s-load';document.getElementById('srcWDI').textContent='⏳ Cargando WB...';
+  pg(true,'Iniciando carga World Bank Live...','#6d28d9');
+
+  // Fetch one WB indicator for all countries, with pagination
+  async function fetchWBIndicator(code){
+    const base=`https://api.worldbank.org/v2/country/all/indicator/${code}?format=json&per_page=300&mrv=1&gapfill=Y`;
+    let results={};
+    try{
+      const r=await fetch(base);const j=await r.json();
+      if(!j[1])return results;
+      const pages=j[0].pages;
+      j[1].forEach(d=>{if(d.value!=null&&d.countryiso3code)results[d.countryiso3code]=d.value;});
+      for(let p=2;p<=pages;p++){
+        const r2=await fetch(base+`&page=${p}`);const j2=await r2.json();
+        if(j2[1])j2[1].forEach(d=>{if(d.value!=null&&d.countryiso3code)results[d.countryiso3code]=d.value;});
+      }
+    }catch(e){}
+    return results;
+  }
+
+  // ISO3→ISO2 map (minimal, covers our countries)
+  const iso3to2={AFG:'AF',ALB:'AL',DZA:'DZ',AGO:'AO',ARG:'AR',ARM:'AM',AUS:'AU',AUT:'AT',AZE:'AZ',BGD:'BD',BLR:'BY',BEL:'BE',BEN:'BJ',BOL:'BO',BIH:'BA',BWA:'BW',BRA:'BR',BGR:'BG',BFA:'BF',BDI:'BI',KHM:'KH',CMR:'CM',CAN:'CA',CAF:'CF',TCD:'TD',CHL:'CL',CHN:'CN',COL:'CO',COD:'CD',COG:'CG',CRI:'CR',HRV:'HR',CUB:'CU',CZE:'CZ',DNK:'DK',EGY:'EG',SLV:'SV',ETH:'ET',FIN:'FI',FRA:'FR',GEO:'GE',DEU:'DE',GHA:'GH',GRC:'GR',GTM:'GT',HTI:'HT',HND:'HN',HUN:'HU',IND:'IN',IDN:'ID',IRN:'IR',IRQ:'IQ',IRL:'IE',ISR:'IL',ITA:'IT',JPN:'JP',JOR:'JO',KAZ:'KZ',KEN:'KE',PRK:'KP',LAO:'LA',LVA:'LV',LBN:'LB',LBY:'LY',LTU:'LT',MYS:'MY',MLI:'ML',MEX:'MX',MDA:'MD',MNG:'MN',MNE:'ME',MAR:'MA',MOZ:'MZ',MMR:'MM',NPL:'NP',NLD:'NL',NZL:'NZ',NIC:'NI',NER:'NE',NGA:'NG',NOR:'NO',PAK:'PK',PAN:'PA',PRY:'PY',PER:'PE',PHL:'PH',POL:'PL',PRT:'PT',ROU:'RO',RUS:'RU',SAU:'SA',SEN:'SN',SRB:'RS',SGP:'SG',SVK:'SK',SVN:'SI',SOM:'SO',ZAF:'ZA',KOR:'KR',SSD:'SS',ESP:'ES',LKA:'LK',SDN:'SD',SWE:'SE',CHE:'CH',SYR:'SY',TWN:'TW',TZA:'TZ',THA:'TH',TUN:'TN',TUR:'TR',UGA:'UG',UKR:'UA',ARE:'AE',GBR:'GB',USA:'US',URY:'UY',VEN:'VE',VNM:'VN',YEM:'YE',ZMB:'ZM',ZWE:'ZW'};
+
+  const indList=Object.entries({...WGI_INDS,...WDI_INDS});
+  let done=0;
+  for(const [field,code] of indList){
+    pgLog(`World Bank: ${code} (${done+1}/${indList.length})`,Math.round(done/indList.length*80),'#6d28d9');
+    const data=await fetchWBIndicator(code);
+    const isWGI=field in WGI_INDS;
+    for(const [iso3,val] of Object.entries(data)){
+      const iso2=iso3to2[iso3];if(!iso2)continue;
+      if(isWGI){
+        if(!WGI[iso2])WGI[iso2]={};
+        WGI[iso2][field]=val;
+      } else {
+        if(!WDI[iso2])WDI[iso2]={};
+        WDI[iso2][field]=val;
+      }
+    }
+    done++;
+    rebuildAll();renderMap(true);renderTable();
+    await sleep(100);
+  }
+
+  // Get latest year from one indicator
+  try{
+    const r=await fetch('https://api.worldbank.org/v2/country/US/indicator/NY.GDP.PCAP.PP.KD?format=json&mrv=1');
+    const j=await r.json();
+    WB_YEAR=j[1]?.[0]?.date||'Live';
+  }catch(e){WB_YEAR='Live';}
+
+  pgLog('✅ World Bank cargado',100,'#166534');
+  setTimeout(()=>pg(false),2000);
+  document.getElementById('srcWGI').className='srcSt s-live';document.getElementById('srcWGI').textContent=`🔵 WB Live ${WB_YEAR}`;
+  document.getElementById('srcWDI').className='srcSt s-live';document.getElementById('srcWDI').textContent=`🔵 WB Live ${WB_YEAR}`;
+  document.getElementById('sWB').textContent=`Live ${WB_YEAR}`;
+  showUpResult('wbResult',true,`✅ World Bank Live cargado (año ${WB_YEAR}) — WGI + WDI actualizados`);
+  ['btnWB','btnWB2'].forEach(id=>{const el=document.getElementById(id);if(el){el.disabled=false;el.textContent='✅ WB Live';}});
+  rebuildAll();renderMap(true);renderTable();
+  wbLoading=false;
+}
+
+// ══════════════════════════════════════════════════════════════
+// REST COUNTRIES
+// ══════════════════════════════════════════════════════════════
+async function loadRestCountries(){
+  document.getElementById('srcRC').className='srcSt s-load';
+  document.getElementById('srcRC').textContent='⏳ Cargando...';
+  try{
+    const r=await fetch('https://restcountries.com/v3.1/all?fields=cca2,name,capital,languages,currencies,region,subregion,population,flags,latlng');
+    const data=await r.json();
+    data.forEach(c=>{
+      const iso=c.cca2;if(!iso)return;
+      RC_DATA[iso]={
+        capital:c.capital?.[0]||'—',
+        region:c.region||'—',
+        subregion:c.subregion||'—',
+        population:c.population||null,
+        languages:Object.values(c.languages||{}).join(', ')||'—',
+        currency:Object.values(c.currencies||{}).map(x=>x.name).join(', ')||'—',
+        flag:c.flags?.png||null,
+        latlng:c.latlng||null
+      };
+    });
+    document.getElementById('srcRC').className='srcSt s-live';
+    document.getElementById('srcRC').textContent=`🔵 Live · ${Object.keys(RC_DATA).length} países`;
+    showUpResult('rcResult',true,`✅ REST Countries: ${Object.keys(RC_DATA).length} países cargados`);
+  }catch(e){
+    document.getElementById('srcRC').className='srcSt s-err';
+    document.getElementById('srcRC').textContent='❌ Error';
+    showUpResult('rcResult',false,'❌ Error al cargar REST Countries');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// GDELT LIVE
+// ══════════════════════════════════════════════════════════════
+let gdeltRunning=false;
+async function refreshGDELT(){
+  if(location.protocol==='file:'){alert('GDELT live requiere servidor HTTP (npx serve .)');return;}
+  if(gdeltRunning)return;
+  gdeltRunning=true;
+  document.getElementById('btnGdelt').disabled=true;
+  pg(true,'GDELT: iniciando...','#3b5bdb');
+  document.getElementById('srcGdelt').className='srcSt s-wait';document.getElementById('srcGdelt').textContent='⏳ Actualizando...';
+  const isos=Object.keys(N2);let done=0,ok=0;
+  for(const iso of isos){
+    const fips=FIPS[iso];
+    pgLog(`GDELT: ${N2[iso]} (${done+1}/${isos.length})`,Math.round(done/isos.length*100),'#3b5bdb');
+    if(fips){
+      await new Promise(resolve=>{
+        const xhr=new XMLHttpRequest(),timer=setTimeout(()=>{xhr.abort();resolve();},8000);
+        xhr.onload=()=>{
+          clearTimeout(timer);
+          if(xhr.status===200){
+            const lines=xhr.responseText.trim().split('\n').slice(1);
+            const pts=lines.map(l=>{const p=l.split(',');return{date:p[0],raw:parseFloat(p[1])};}).filter(p=>!isNaN(p.raw));
+            if(pts.length){GDELT_HISTORY[iso]=pts.map(p=>({date:p.date,kpi:gdeltToKPI(p.raw)}));GDELT_DATA[iso]=pts.reduce((a,b)=>a+b.raw,0)/pts.length;ok++;}
+          }
+          resolve();
+        };
+        xhr.onerror=()=>{clearTimeout(timer);resolve();};xhr.onabort=()=>resolve();
+        xhr.open('GET',`https://api.gdeltproject.org/api/v1/dash_stabilitytimeline/dash_stabilitytimeline?LOC=${fips}&VAR=instability&TIMERES=day&SMOOTH=5&NUMDAYS=14&output=csv`,true);xhr.send();
+      });
+    }
+    done++;
+    if(done%5===0||done===isos.length){rebuildAll();renderMap(true);renderTable();}
+    await sleep(80);
+  }
+  pg(false);
+  document.getElementById('srcGdelt').className='srcSt s-live';document.getElementById('srcGdelt').textContent=`🔵 Live · ${ok}/${isos.length}`;
+  document.getElementById('btnGdelt').disabled=false;
+  gdeltRunning=false;
+}
+
+async function fetchGDELTHistory(iso){
+  const fips=FIPS[iso];if(!fips||location.protocol==='file:')return null;
+  return new Promise(resolve=>{
+    const xhr=new XMLHttpRequest(),timer=setTimeout(()=>{xhr.abort();resolve(null);},8000);
+    xhr.onload=()=>{clearTimeout(timer);if(xhr.status!==200){resolve(null);return;}const lines=xhr.responseText.trim().split('\n').slice(1);const pts=lines.map(l=>{const p=l.split(',');return{date:p[0],kpi:gdeltToKPI(parseFloat(p[1]))};}).filter(p=>!isNaN(p.kpi));resolve(pts.length?pts:null);};
+    xhr.onerror=()=>{clearTimeout(timer);resolve(null);};xhr.onabort=()=>resolve(null);
+    xhr.open('GET',`https://api.gdeltproject.org/api/v1/dash_stabilitytimeline/dash_stabilitytimeline?LOC=${fips}&VAR=instability&TIMERES=day&SMOOTH=5&NUMDAYS=14&output=csv`,true);xhr.send();
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// GDELT NEWS
+// ══════════════════════════════════════════════════════════════
+async function fetchCountryNews(name){
+  const q=encodeURIComponent(`"${name}" (conflict OR war OR crisis OR election OR economy OR politics)`);
+  const url=`https://api.gdeltproject.org/api/v2/doc/doc?query=${q}&mode=artlist&maxrecords=5&format=json&timespan=7d`;
+  return new Promise(resolve=>{
+    const xhr=new XMLHttpRequest(),timer=setTimeout(()=>{xhr.abort();resolve(null);},12000);
+    xhr.onload=()=>{clearTimeout(timer);if(xhr.status!==200){resolve(null);return;}try{resolve(JSON.parse(xhr.responseText).articles||[]);}catch{resolve(null);}};
+    xhr.onerror=()=>{clearTimeout(timer);resolve(null);};xhr.onabort=()=>resolve(null);
+    xhr.open('GET',url,true);xhr.send();
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// SPARKLINE
+// ══════════════════════════════════════════════════════════════
+function drawSparkline(pts,w,h){
+  if(!pts||pts.length<2)return'<span style="font-size:11px;color:#94a3b8">Sin datos históricos</span>';
+  const vals=pts.map(p=>p.kpi),mn=Math.min(...vals),mx=Math.max(...vals),range=mx-mn||1;
+  const px=i=>Math.round((i/(pts.length-1))*w),py=v=>Math.round(h-((v-mn)/range)*(h-8)-4);
+  const points=pts.map((p,i)=>`${px(i)},${py(p.kpi)}`).join(' ');
+  const last=vals[vals.length-1],lx=px(pts.length-1),ly=py(last);
+  const col=last>=80?'#22c55e':last>=60?'#eab308':last>=40?'#f97316':'#dc2626';
+  const trend=vals[vals.length-1]-vals[0];
+  const tStr=trend>2?'↑ Mejorando':trend<-2?'↓ Empeorando':'→ Estable';
+  const tCol=trend>2?'#166534':trend<-2?'#991b1b':'#6b7280';
+  return`<div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+    <svg width="${w}" height="${h}" style="overflow:visible;flex-shrink:0">
+      <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${col}" stop-opacity="0.3"/><stop offset="100%" stop-color="${col}" stop-opacity="0.02"/></linearGradient></defs>
+      <polyline points="${points}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <polygon points="0,${h} ${points} ${lx},${h}" fill="url(#sg)"/>
+      <circle cx="${lx}" cy="${ly}" r="4" fill="${col}" stroke="#fff" stroke-width="1.5"/>
+      <text x="${lx+6}" y="${ly+4}" font-size="10" fill="${col}" font-weight="700">${last}</text>
+    </svg>
+    <div>
+      <div style="font-size:18px;font-weight:800;color:${col}">${last}<span style="font-size:11px;font-weight:400;color:#9ca3af">/100</span></div>
+      <div style="font-size:11px;color:${tCol};font-weight:600">${tStr} (14 días)</div>
+      <div style="font-size:10px;color:#94a3b8;margin-top:2px">${pts[0]?.date?.slice(0,8)||''} → hoy</div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROGRESS
+// ══════════════════════════════════════════════════════════════
+function pg(show,msg='',col='#3b5bdb'){document.getElementById('pgWrap').style.display=show?'block':'none';if(msg){document.getElementById('pgLog').textContent=msg;document.getElementById('pgFill').style.background=col;}}
+function pgLog(msg,pct,col='#3b5bdb'){document.getElementById('pgLog').textContent=msg;document.getElementById('pgPct').textContent=pct+'%';document.getElementById('pgFill').style.width=pct+'%';document.getElementById('pgFill').style.background=col;}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ══════════════════════════════════════════════════════════════
+// MANUAL UPDATE HANDLERS
+// ══════════════════════════════════════════════════════════════
+function parseCSV(t){return t.trim().split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('#')).map(l=>l.split(',').map(s=>s.trim()));}
+function showUpResult(id,ok,msg){const el=document.getElementById(id);if(!el)return;el.style.display='block';el.className='upResult '+(ok?'ok':'err');el.textContent=msg;setTimeout(()=>{el.style.display='none';},6000);}
+function applyWGI(){const rows=parseCSV(document.getElementById('wgiPaste').value);let n=0;rows.forEach(([iso,PV,GE,CC,RL,VA,RQ])=>{if(!iso||iso.length!==2)return;const e={};[['PV',PV],['GE',GE],['CC',CC],['RL',RL],['VA',VA],['RQ',RQ]].forEach(([k,v])=>{if(v!==undefined&&v!=='')e[k]=parseFloat(v);});WGI[iso.toUpperCase()]={...(WGI[iso.toUpperCase()]||{}),...e};n++;});rebuildAll();renderMap(true);renderTable();showUpResult('wgiResult',true,`✅ WGI: ${n} países actualizados`);}
+function applyWDI(){const rows=parseCSV(document.getElementById('wdiPaste').value);let n=0;rows.forEach(([iso,GDP,EL,CO2,FR,UN,LIT,POV])=>{if(!iso||iso.length!==2)return;const e={};[['GDP',GDP],['EL',EL],['CO2',CO2],['FR',FR],['UN',UN],['LIT',LIT],['POV',POV]].forEach(([k,v])=>{if(v!==undefined&&v!=='')e[k]=parseFloat(v);});WDI[iso.toUpperCase()]={...(WDI[iso.toUpperCase()]||{}),...e};n++;});rebuildAll();renderMap(true);renderTable();showUpResult('wdiResult',true,`✅ WDI: ${n} países actualizados`);}
+function applyCPI(){const rows=parseCSV(document.getElementById('cpiPaste').value);let n=0;rows.forEach(([iso,val])=>{if(!iso||iso.length!==2||!val)return;CPI[iso.toUpperCase()]=parseFloat(val);n++;});rebuildAll();renderMap(true);renderTable();showUpResult('cpiResult',true,`✅ CPI: ${n} países`);}
+function applyFH(){const rows=parseCSV(document.getElementById('fhPaste').value);let n=0;rows.forEach(([iso,val])=>{if(!iso||iso.length!==2||!val)return;FH[iso.toUpperCase()]=parseInt(val);n++;});rebuildAll();renderMap(true);renderTable();showUpResult('fhResult',true,`✅ FH: ${n} países`);}
+function applyGDELT(){const rows=parseCSV(document.getElementById('gdeltPaste').value);let n=0;rows.forEach(([iso,val])=>{if(!iso||iso.length!==2||!val)return;GDELT_DATA[iso.toUpperCase()]=parseFloat(val);n++;});rebuildAll();renderMap(true);renderTable();showUpResult('gdeltResult',true,`✅ GDELT: ${n} países`);}
+function exportCurrentWGI(){dl('ISO2,PV,GE,CC,RL,VA,RQ\n'+Object.entries(WGI).map(([k,v])=>`${k},${v.PV??''},${v.GE??''},${v.CC??''},${v.RL??''},${v.VA??''},${v.RQ??''}`).join('\n'),'wgi.csv');}
+function exportCurrentWDI(){dl('ISO2,GDP,EL,CO2,FR,UN,LIT,POV\n'+Object.entries(WDI).map(([k,v])=>`${k},${v.GDP??''},${v.EL??''},${v.CO2??''},${v.FR??''},${v.UN??''},${v.LIT??''},${v.POV??''}`).join('\n'),'wdi.csv');}
+function exportCurrentGDELT(){dl('ISO2,instability\n'+Object.entries(GDELT_DATA).map(([k,v])=>`${k},${v}`).join('\n'),'gdelt.csv');}
+function dl(csv,name){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=name;a.click();}
+
+// ══════════════════════════════════════════════════════════════
+// DATA BUILD
+// ══════════════════════════════════════════════════════════════
+let allData={};
+function rebuildAll(){Object.keys(N2).forEach(iso=>{const s=buildScore(iso);if(s)allData[iso]=s;});updStats();renderAlerts();}
+function updStats(){
+  const v=Object.values(allData);
+  document.getElementById('sT').textContent=v.length;
+  document.getElementById('sL').textContent=v.filter(r=>r.RL==='low').length;
+  document.getElementById('sM').textContent=v.filter(r=>r.RL==='medium').length;
+  document.getElementById('sH').textContent=v.filter(r=>r.RL==='high'&&!r.isConflict).length;
+  document.getElementById('sC').textContent=v.filter(r=>r.isConflict).length;
+  document.getElementById('sWB').textContent=WB_YEAR;
+}
+function renderAlerts(){
+  const al=Object.values(allData).filter(r=>r.isConflict).sort((a,b)=>a.CountryScore-b.CountryScore);
+  document.getElementById('ab').style.display=al.length?'block':'none';
+  document.getElementById('at').innerHTML=al.map(r=>`<button class="atag" onclick="openModal('${r.iso}')">${r.country} · ${r.CountryScore}</button>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// MAP
+// ══════════════════════════════════════════════════════════════
+let mapOk=false;
+const GC={Gobernanza:'#7f77dd',Social:'#378add',Financiero:'#ba7517',Ambiental:'#1d9e75'};
+function fillC(iso){const r=allData[iso];if(!r)return'#cbd5e1';if(r.isConflict)return'#7f1d1d';if(r.CountryScore>=65)return'#22c55e';if(r.CountryScore>=55)return'#eab308';if(r.CountryScore>=40)return'#f97316';return'#dc2626';}
+
+function renderMap(upd=false){
+  const wrap=document.getElementById('mapWrap');
+  if(upd&&mapOk&&window.d3){d3.selectAll('path.land').attr('fill',d=>fillC(NUM2[+d.id]));return;}
+  if(mapOk)return;
+  document.getElementById('mapMsg').style.display='none';
+  function ldS(s){return new Promise(r=>{if(document.querySelector(`script[src="${s}"]`))return r();const el=document.createElement('script');el.src=s;el.onload=r;document.head.appendChild(el);});}
+  Promise.all([ldS('https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js'),ldS('https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js')])
+  .then(()=>fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r=>r.json()))
+  .then(world=>{
+    const W=wrap.clientWidth||900,H=Math.round(W*0.5);
+    wrap.style.minHeight=H+'px';
+    const svg=d3.select(wrap).insert('svg','#mt').attr('width',W).attr('height',H).style('width','100%').style('height',H+'px').style('display','block');
+    svg.append('rect').attr('width',W).attr('height',H).attr('fill','#bfdbfe');
+    const proj=d3.geoNaturalEarth1().scale(W/6.2).translate([W/2,H/2]);
+    const path=d3.geoPath(proj);
+    const tip=document.getElementById('mt');
+    svg.selectAll('path.land').data(topojson.feature(world,world.objects.countries).features).join('path').attr('class','land')
+      .attr('d',path).attr('stroke','#fff').attr('stroke-width',.4).attr('fill',d=>fillC(NUM2[+d.id]))
+      .style('cursor',d=>allData[NUM2[+d.id]]?'pointer':'default')
+      .on('mouseover',function(e,d){
+        const iso=NUM2[+d.id],r=allData[iso];if(!r)return;
+        d3.select(this).attr('stroke','#222').attr('stroke-width',1.5);
+        tip.style.display='block';
+        const rc=wrap.getBoundingClientRect(),x=e.clientX-rc.left,y=e.clientY-rc.top;
+        tip.style.left=(x>W*.7?x-260:x+12)+'px';tip.style.top=(y>H*.75?y-120:y+8)+'px';
+        const cc=r.isConflict?'#fca5a5':'#86efac';
+        const gl=r.GdeltKPI!=null?gdeltLabel(r.GdeltKPI):null;
+        const rc2=RC_DATA[iso];
+        tip.innerHTML=`<b style="color:${cc}">${r.isConflict?'⚠ ':''}${r.country}</b>${rc2?` <span style="font-size:10px;opacity:.6">${rc2.region}</span>`:''}
+<br>Score: <b>${r.CountryScore}</b> · ${bH(r)}
+${gl?`<br><span style="font-size:11px">${gl.emoji} Estabilidad: <b>${r.GdeltKPI}/100</b> · ${gl.label}</span>`:''}
+${rc2?.capital?`<br><span style="font-size:10px;opacity:.7">🏛 ${rc2.capital}</span>`:''}
+<br><span style="font-size:10px;opacity:.5">Clic → detalle completo</span>`;
+      })
+      .on('mousemove',function(e){const rc=wrap.getBoundingClientRect(),x=e.clientX-rc.left,y=e.clientY-rc.top;tip.style.left=(x>W*.7?x-260:x+12)+'px';tip.style.top=(y>H*.75?y-120:y+8)+'px';})
+      .on('mouseout',function(){d3.select(this).attr('stroke','#fff').attr('stroke-width',.4);tip.style.display='none';})
+      .on('click',(e,d)=>{const iso=NUM2[+d.id];if(allData[iso])openModal(iso);});
+    mapOk=true;
+  }).catch(()=>{document.getElementById('mapMsg').style.display='flex';document.getElementById('mapMsg').textContent='⚠ Mapa no disponible sin conexión.';});
+}
+
+// ══════════════════════════════════════════════════════════════
+// TABLE
+// ══════════════════════════════════════════════════════════════
+let sk='CountryScore',sd=-1;
+const COLS=[
+  {k:'country',l:'País',w:110,fn:(v,r)=>{const rc=RC_DATA[r.iso];return`<b style="color:${r.isConflict?'#991b1b':'#111'}">${r.isConflict?'⚠ ':''}${v}</b>${rc?.flag?` <img src="${rc.flag}" style="height:12px;vertical-align:middle;margin-left:3px" loading="lazy">`:''}`;} },
+  {k:'CountryScore',l:'Score',w:50,fn:(v,r)=>`<b style="font-size:13px;color:${sc2c(v,r)}">${v}</b>`},
+  {k:'RL',l:'Nivel',w:82,fn:(_,r)=>bH(r)},
+  {k:'GdeltKPI',l:'Estabilidad',w:150,fn:(v)=>{if(v==null)return'<span style="color:#ccc;font-size:10px">—</span>';const gl=gdeltLabel(v);return`<span class="gdelt-pill" style="background:${gl.bg};color:${gl.color}">${gl.emoji} ${v}/100 · ${gl.label}</span>`;}},
+  {k:'PoliticalStability',l:'Pol.Est.',w:60,g:'Gobernanza'},{k:'Governance',l:'Gobernanza',w:68,g:'Gobernanza'},
+  {k:'Corruption',l:'Corrupción',w:68,g:'Gobernanza'},{k:'RuleOfLaw',l:'Est.Der.',w:60,g:'Gobernanza'},
+  {k:'Voice',l:'Voz',w:50,g:'Gobernanza'},{k:'InstitutionalCapacity',l:'Cap.Inst.',w:62,g:'Gobernanza'},
+  {k:'CivilLiberties',l:'Libertades',w:66,g:'Social'},{k:'HumanCapital',l:'Cap.Hum.',w:62,g:'Social'},
+  {k:'WorkingConditions',l:'Empleo',w:56,g:'Social'},{k:'SocialVulnerability',l:'Vulnerab.',w:62,g:'Social'},
+  {k:'Financial',l:'Financiero',w:64,g:'Financiero'},{k:'Infrastructure',l:'Infraestr.',w:62,g:'Financiero'},
+  {k:'Environmental',l:'Ambiental',w:64,g:'Ambiental'},{k:'BiodiversityAndDeforestation',l:'Biodiver.',w:62,g:'Ambiental'},
+];
+function bH(r){if(r.isConflict)return`<span class="badge bC">⚠ Conflicto</span>`;if(r.RL==='low')return`<span class="badge bL">Bajo</span>`;if(r.RL==='medium')return`<span class="badge bM">Medio</span>`;return`<span class="badge bH">Alto</span>`;}
+function sc2c(v,r){return r.isConflict?'#991b1b':v>=65?'#166534':v>=40?'#854d0e':'#991b1b';}
+
+function renderTable(){
+  const q=(document.getElementById('srch')?.value||'').toLowerCase();
+  let rows=Object.values(allData).filter(r=>r.country.toLowerCase().includes(q));
+  rows.sort((a,b)=>{const av=typeof a[sk]==='string'?a[sk]:a[sk]??-999,bv=typeof b[sk]==='string'?b[sk]:b[sk]??-999;return(av<bv?-1:av>bv?1:0)*sd;});
+  document.getElementById('th').innerHTML=COLS.map(c=>`<th style="min-width:${c.w}px" onclick="sBy('${c.k}')">${c.l}${sk===c.k?(sd===-1?' ↓':' ↑'):''}</th>`).join('');
+  document.getElementById('tb2').innerHTML=rows.map(r=>`<tr class="${r.isConflict?'rc':''}" onclick="openModal('${r.iso}')" style="cursor:pointer">${
+    COLS.map(c=>{const v=r[c.k];
+      if(c.fn)return`<td>${c.fn(v,r)}</td>`;
+      const p=v!=null?Math.max(0,Math.min(100,Math.round(+v))):null;
+      const col=r.isConflict&&c.k==='PoliticalStability'?'#991b1b':GC[c.g]||'#888';
+      return`<td><div class="bw"><div class="bb"><div class="bf" style="width:${p??0}%;background:${col}"></div></div><span class="bv">${p??'—'}</span></div></td>`;
+    }).join('')}</tr>`).join('');
+  document.getElementById('tcnt').textContent=`${rows.length} países`;
+}
+function sBy(k){sk===k?sd*=-1:(sk=k,sd=-1);renderTable();}
+
+// ══════════════════════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════════════════════
+async function openModal(iso){
+  const r=allData[iso];if(!r)return;
+  const rc=RC_DATA[iso]||null;
+  const al=r.isConflict;
+  const gl=r.GdeltKPI!=null?gdeltLabel(r.GdeltKPI):null;
+
+  document.getElementById('mh').innerHTML=`
+    <div style="flex:1">
+      ${al?`<div style="font-size:11px;font-weight:700;color:#991b1b;background:#fee2e2;padding:2px 10px;border-radius:99px;display:inline-block;margin-bottom:8px">⚠ CONFLICTO ACTIVO</div><br>`:''}
+      <div style="display:flex;align-items:center;gap:10px">
+        ${rc?.flag?`<img src="${rc.flag}" style="height:28px;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.2)" loading="lazy">`:''}
+        <div style="font-size:21px;font-weight:800;color:${al?'#991b1b':'#111'}">${r.country}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
+        <span style="font-size:30px;font-weight:800;color:${sc2c(r.CountryScore,r)}">${r.CountryScore}</span>
+        ${bH(r)}
+      </div>
+    </div>
+    <button onclick="document.getElementById('ov').style.display='none'" style="background:none;border:none;font-size:24px;cursor:pointer;color:#6b7280;line-height:1;flex-shrink:0">✕</button>`;
+
+  // REST Countries info pills
+  const rcHTML=rc?`<div class="cinfo">
+    ${rc.capital?`<div class="cpill">🏛 Capital: <b>${rc.capital}</b></div>`:''}
+    ${rc.region?`<div class="cpill">🌍 Región: <b>${rc.region}${rc.subregion?' · '+rc.subregion:''}</b></div>`:''}
+    ${rc.languages&&rc.languages!=='—'?`<div class="cpill">🗣 Idioma: <b>${rc.languages.split(',')[0]}</b></div>`:''}
+    ${rc.currency&&rc.currency!=='—'?`<div class="cpill">💱 Moneda: <b>${rc.currency.split(',')[0]}</b></div>`:''}
+    ${rc.population?`<div class="cpill">👥 Población: <b>${(rc.population/1e6).toFixed(1)}M</b></div>`:''}
+    <div class="cpill" style="font-size:10px;color:#94a3b8">REST Countries API</div>
+  </div>`:'';
+
+  const gdeltBoxHTML=gl?`<div class="gdeltBox" style="background:${gl.bg};border-color:${gl.color}30">
+    <div class="gdeltKPI" style="color:${gl.color}">${r.GdeltKPI}</div>
+    <div class="gdeltInfo">
+      <div class="gdeltLabel" style="color:${gl.color}">${gl.emoji} ${gl.label}</div>
+      <div class="gdeltSub" style="color:${gl.color}">${gl.sub}</div>
+      <div style="font-size:10px;color:${gl.color};opacity:.6;margin-top:4px">Índice de Estabilidad GDELT · 0 crisis · 100 máxima calma · Fuente: WB YEAR: ${WB_YEAR}</div>
+    </div>
+  </div>`:'';
+
+  const groups=[
+    {g:'Gobernanza',c:'#7f77dd',ks:[['PoliticalStability','Estab. política','WGI PV.EST + GDELT'],['Governance','Gobernanza','WGI GE.EST'],['Corruption','Corrupción',r.srcCPI],['RuleOfLaw','Est. Derecho','WGI RL.EST'],['Voice','Voz y Rendición','WGI VA.EST'],['InstitutionalCapacity','Cap. Institucional','WGI RQ.EST']]},
+    {g:'Social',c:'#378add',ks:[['CivilLiberties','Libertades Civiles',r.srcFH],['HumanCapital','Capital Humano','WDI alfabetización'],['WorkingConditions','Cond. Laborales','WDI desempleo inv.'],['SocialVulnerability','Vulnerab. Social','WDI pobreza inv.'],['Social','Social (compuesto)','Ponderado']]},
+    {g:'Financiero',c:'#ba7517',ks:[['Financial','PIB per cápita PPP',`WDI ${WB_YEAR}`],['Infrastructure','Electricidad %',`WDI ${WB_YEAR}`]]},
+    {g:'Ambiental',c:'#1d9e75',ks:[['Environmental','CO₂ (invertido)',`WDI ${WB_YEAR}`],['BiodiversityAndDeforestation','Biodiversidad/Forestal',`WDI ${WB_YEAR}`],['EnvironmentalVulnerability','Vulnerab. Ambiental','Estimado']]},
+  ];
+
+  document.getElementById('mb').innerHTML=
+    rcHTML+
+    gdeltBoxHTML+
+    `<div class="histBox">
+      <h4>📈 Evolución de la estabilidad — Últimos 14 días</h4>
+      <div id="histChart"><span style="font-size:11px;color:#94a3b8">⏳ Cargando...</span></div>
+    </div>`+
+    `<div class="newsBox">
+      <h4>📰 Noticias recientes — GDELT DOC API v2</h4>
+      <div id="newsContent"><div class="newsLoading">⏳ Cargando noticias...</div></div>
+    </div>`+
+    groups.map(({g,c,ks})=>`<div class="grp">
+      <div class="gtitle" style="color:${c};border-color:${c}30">${g}</div>
+      ${ks.map(([k,l,src])=>{const v=r[k],p=v!=null?Math.max(0,Math.min(100,Math.round(+v))):null;const bc=al&&k==='PoliticalStability'?'#991b1b':c;
+        return`<div class="vrow"><div class="vlabel"><span style="color:#374151;font-weight:600">${l}</span><span class="vsrc">${src}</span></div>
+        <div class="vbar"><div class="vbarBg"><div class="vbarFl" style="width:${p??0}%;background:${bc}"></div></div><span class="vval">${p??'—'}</span></div></div>`;
+      }).join('')}
+    </div>`).join('')+
+    `<div style="padding:10px 13px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;font-size:11px;color:#6b7280;line-height:1.8;margin-top:4px">
+      <b style="color:#374151">Fuentes:</b> WGI ${WB_YEAR} ${r.Governance!=null?'✅':'❌'} · WDI ${WB_YEAR} ${r.Financial!=null?'✅':'❌'} · ${r.srcCPI} · ${r.srcFH} · GDELT ${r.GdeltRaw!=null?'✅':'snapshot'} · REST Countries ${rc?'✅':'⏳'}
+    </div>`;
+
+  document.getElementById('ov').style.display='flex';
+
+  // Load history
+  let pts=GDELT_HISTORY[iso]||null;
+  if(!pts)pts=await fetchGDELTHistory(iso);
+  const hEl=document.getElementById('histChart');
+  if(hEl){
+    if(pts?.length){hEl.innerHTML=drawSparkline(pts,280,60);}
+    else if(r.GdeltKPI!=null){const gl2=gdeltLabel(r.GdeltKPI);hEl.innerHTML=`<span style="font-size:13px;color:${gl2.color};font-weight:700">${gl2.emoji} ${r.GdeltKPI}/100</span><span style="font-size:11px;color:#94a3b8;margin-left:8px">(Activa GDELT live para ver evolución)</span>`;}
+    else{hEl.innerHTML=`<span style="font-size:11px;color:#94a3b8">Sin datos históricos</span>`;}
+  }
+
+  // Load news
+  const articles=await fetchCountryNews(r.country);
+  const nEl=document.getElementById('newsContent');
+  if(!nEl)return;
+  if(!articles?.length){nEl.innerHTML=`<div class="newsLoading">Sin noticias recientes</div>`;return;}
+  nEl.innerHTML=articles.map(a=>{
+    const date=a.seendate?a.seendate.slice(0,8):'';
+    const fd=date?`${date.slice(6,8)}/${date.slice(4,6)}/${date.slice(0,4)}`:'';
+    return`<div class="newsItem"><a href="${a.url}" target="_blank">${a.title||'Sin título'}</a><div class="newsDate">${fd} · ${a.domain||''}</div></div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// CSV EXPORT
+// ══════════════════════════════════════════════════════════════
+function expCSV(){
+  const ks=['country','iso','CountryScore','RL','isConflict','GdeltKPI','PoliticalStability','Governance','Corruption','RuleOfLaw','Voice','InstitutionalCapacity','CivilLiberties','HumanCapital','WorkingConditions','SocialVulnerability','Social','Financial','Infrastructure','Environmental','BiodiversityAndDeforestation','GdeltRaw'];
+  const rows=[ks.join(','),...Object.values(allData).map(r=>ks.map(k=>{const v=String(r[k]??'');return v.includes(',')?`"${v}"`:v;}).join(','))];
+  dl(rows.join('\n'),`geopolitical_risk_${new Date().toISOString().slice(0,10)}.csv`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════════════
+function goTab(n,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');
+  ['map','table','update','method'].forEach(t=>document.getElementById('tab-'+t).style.display=t===n?'block':'none');
+  if(n==='map')renderMap(false);if(n==='table')renderTable();
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+rebuildAll();
+renderMap(false);
+// Auto-load REST Countries on start (lightweight, ~2MB, no key needed)
+loadRestCountries();
+</script>
+</body>
+</html>
