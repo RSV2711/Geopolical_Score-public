@@ -38,7 +38,7 @@ header{background:#1a1f2e;color:#fff;padding:12px 20px;display:flex;align-items:
 .at{display:flex;flex-wrap:wrap;gap:5px}
 .atag{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid #fca5a5;background:#fff;color:#991b1b;cursor:pointer;font-weight:600}
 /* MAP */
-#mapWrap{position:relative;background:#fff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:12px;min-height:400px}
+#mapWrap{position:relative;background:#fff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:12px;min-height:480px;height:clamp(400px,50vw,600px)}
 #mapMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:#6b7280}
 .mt{position:absolute;pointer-events:none;background:#1a1f2e;color:#fff;border-radius:8px;padding:9px 13px;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,.35);display:none;z-index:10;max-width:260px;line-height:1.6}
 .leg{display:flex;flex-wrap:wrap;gap:10px;padding:8px 14px;border-top:1px solid #f0f0f0;font-size:11px;color:#555}
@@ -323,7 +323,22 @@ code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:11px}
     </div>
 
     <div class="upSection">
-      <h4>⚡ GDELT — Snapshot manual</h4>
+      <h4>🏦 S&P · Moody's · Fitch — Ratings Crediticios Soberanos</h4>
+      <p>Fuentes: <a href="https://www.spglobal.com/ratings/en/research-insights/sovereign-ratings-list" target="_blank">S&P Sovereign Ratings</a> · <a href="https://www.moodys.com/researchandratings/market-segment/sovereign-supranational/-/005006/4294966455/4294966519/0/0/-/0/-/-/-/en/global/rr" target="_blank">Moody's Sovereigns</a> · <a href="https://www.fitchratings.com/sovereigns" target="_blank">Fitch Sovereigns</a></p>
+      <ol class="steps">
+        <li data-n="1">Visita cualquiera de las webs de las agencias y busca el país que quieres actualizar</li>
+        <li data-n="2">Anota el rating de deuda soberana a largo plazo en moneda extranjera (LT Foreign Currency)</li>
+        <li data-n="3">Pega abajo en formato <code>ISO2,SP,Moody,Fitch</code>. Usa <code>-</code> si una agencia no tiene rating activo</li>
+        <li data-n="4">Escalas: S&P/Fitch usan <code>AAA AA+ AA AA- A+ A A- BBB+ BBB BBB- BB+ BB BB- B+ B B- CCC+ CCC CCC- CC SD D</code> · Moody's usa <code>Aaa Aa1 Aa2 Aa3 A1 A2 A3 Baa1 Baa2 Baa3 Ba1 Ba2 Ba3 B1 B2 B3 Caa1 Caa2 Caa3 Ca C</code></li>
+      </ol>
+      <p>Formato: <code>ISO2,SP,Moody,Fitch</code> · Ejemplo: <code>ES,A,Baa1,A-</code> · Usa <code>-</code> para sin rating</p>
+      <textarea id="ratingsPaste" placeholder="ES,A,Baa1,A-&#10;FR,AA-,Aa2,AA-&#10;DE,AAA,Aaa,AAA&#10;RU,-,-,-&#10;UA,SD,Caa3,RD&#10;..."></textarea>
+      <div class="upBtns">
+        <button class="upBtn upBtn-g" onclick="applyRatings()">✅ Aplicar Ratings</button>
+        <button class="upBtn" onclick="exportCurrentRatings()">⬇ Exportar actuales</button>
+      </div>
+      <div class="upResult" id="ratingsResult"></div>
+    </div>
       <p>Formato: <code>ISO2,instability</code> (0–0.20, mayor = más inestable)</p>
       <textarea id="gdeltPaste" placeholder="UA,0.172&#10;RU,0.094" style="height:80px"></textarea>
       <div class="upBtns">
@@ -360,22 +375,35 @@ Penalización GDELT:
   instabilidad > 0.04 → × 0.65   (conflicto activo)
   instabilidad > 0.02 → × 0.85   (tensión)
     </div>
-    <h3>Pesos de variables</h3>
+    <h3>Fuentes y pesos (18 variables)</h3>
     <table><tr><th>Variable</th><th>Fuente</th><th>Peso</th></tr>
       <tr><td>Estabilidad política</td><td>WGI PV.EST + GDELT</td><td>0.20</td></tr>
       <tr><td>Gobernanza</td><td>WGI GE.EST</td><td>0.10</td></tr>
       <tr><td>Corrupción</td><td>TI CPI 2024</td><td>0.10</td></tr>
       <tr><td>Estado de Derecho</td><td>WGI RL.EST</td><td>0.08</td></tr>
       <tr><td>Libertades Civiles</td><td>Freedom House CL</td><td>0.08</td></tr>
+      <tr><td><b>Rating Crediticio</b></td><td><b>S&P · Moody's · Fitch (media)</b></td><td><b>0.08</b></td></tr>
       <tr><td>Voz y Rendición</td><td>WGI VA.EST</td><td>0.06</td></tr>
       <tr><td>Cap. Institucional</td><td>WGI RQ.EST</td><td>0.06</td></tr>
-      <tr><td>Financiero (GDP)</td><td>WDI NY.GDP.PCAP.PP.KD</td><td>0.08</td></tr>
+      <tr><td>Financiero (GDP)</td><td>WDI NY.GDP.PCAP.PP.KD</td><td>0.05</td></tr>
       <tr><td>Capital Humano</td><td>WDI SE.ADT.LITR.ZS</td><td>0.05</td></tr>
       <tr><td>Infraestructura</td><td>WDI EG.ELC.ACCS.ZS</td><td>0.04</td></tr>
       <tr><td>Cond. Laborales</td><td>WDI SL.UEM.TOTL.ZS</td><td>0.04</td></tr>
       <tr><td>Vulnerab. Social</td><td>WDI SI.POV.NAHC</td><td>0.04</td></tr>
-      <tr><td>Ambiental CO₂</td><td>WDI EN.ATM.CO2E.PC</td><td>0.03</td></tr>
+      <tr><td>Ambiental CO₂</td><td>WDI EN.ATM.CO2E.PC</td><td>0.02</td></tr>
       <tr><td>Biodiversidad</td><td>WDI AG.LND.FRST.ZS</td><td>0.02</td></tr>
+      <tr><td>Vulnerab. Ambiental</td><td>Estimado</td><td>0.02</td></tr>
+    </table>
+    <h3>Conversión de ratings a escala 0-100</h3>
+    <table><tr><th>S&P / Fitch</th><th>Moody's</th><th>Score</th><th>Categoría</th></tr>
+      <tr><td>AAA</td><td>Aaa</td><td>100</td><td>Máxima solvencia</td></tr>
+      <tr><td>AA+ / AA / AA-</td><td>Aa1 / Aa2 / Aa3</td><td>95 / 92 / 89</td><td>Muy alta solvencia</td></tr>
+      <tr><td>A+ / A / A-</td><td>A1 / A2 / A3</td><td>85 / 82 / 79</td><td>Alta solvencia</td></tr>
+      <tr><td>BBB+ / BBB / BBB-</td><td>Baa1 / Baa2 / Baa3</td><td>74 / 70 / 66</td><td>Grado inversión (mínimo)</td></tr>
+      <tr><td>BB+ / BB / BB-</td><td>Ba1 / Ba2 / Ba3</td><td>61 / 57 / 53</td><td>Especulativo</td></tr>
+      <tr><td>B+ / B / B-</td><td>B1 / B2 / B3</td><td>47 / 43 / 39</td><td>Alto riesgo</td></tr>
+      <tr><td>CCC+ / CCC / CCC-</td><td>Caa1 / Caa2 / Caa3</td><td>30 / 22 / 15</td><td>Riesgo muy alto</td></tr>
+      <tr><td>SD / D / RD</td><td>Ca / C</td><td>0 – 8</td><td>Default / En restructuración</td></tr>
     </table>
   </div>
 </div>
@@ -392,7 +420,46 @@ Penalización GDELT:
 
 <script>
 // ══════════════════════════════════════════════════════════════
-// STATIC FALLBACK DATA
+// QUÉ HACE ESTE ARCHIVO HTML
+// ══════════════════════════════════════════════════════════════
+// Es una aplicación web de una sola página (no necesita servidor).
+// Muestra un mapa mundial con el riesgo geopolítico de ~120 países.
+//
+// CÓMO FUNCIONA (de arriba a abajo):
+//  1. Al cargar → usa datos embebidos (WGI, WDI, CPI, FH) como base
+//  2. Auto-carga REST Countries (capital, bandera...) en silencio
+//  3. El usuario puede pulsar "🌐 Cargar WB Live" para sustituir
+//     los datos embebidos por datos reales del Banco Mundial
+//  4. El usuario puede pulsar "↺ GDELT Live" para obtener la
+//     inestabilidad en tiempo real + historial de 14 días
+//  5. Al hacer clic en un país → modal con todo el detalle
+//     + gráfico histórico GDELT + noticias en tiempo real (GDELT DOC API)
+//
+// SIN IA. El score se calcula con una fórmula matemática fija.
+// ══════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════
+// DATOS EMBEBIDOS (FALLBACK)
+// ══════════════════════════════════════════════════════════════
+// Estos tres bloques (WGI, WDI, CPI, FH) son datos estáticos
+// copiados de las fuentes oficiales. Se usan si el usuario
+// no pulsa "Cargar WB Live" o si la conexión falla.
+//
+// WGI = Worldwide Governance Indicators (Banco Mundial)
+//   Cada país tiene 6 valores entre -2.5 y +2.5:
+//   PV=Estabilidad política, GE=Gobernanza, CC=Control corrupción,
+//   RL=Estado de derecho, VA=Voz ciudadana, RQ=Calidad regulatoria
+//
+// WDI = World Development Indicators (Banco Mundial)
+//   GDP=PIB per cápita, EL=Electricidad%, CO2=CO₂/cápita,
+//   FR=Superficie forestal%, UN=Desempleo%, LIT=Alfabetización%,
+//   POV=Pobreza%
+//
+// CPI = Corruption Perceptions Index (Transparency International)
+//   Score 0-100. 100 = país muy limpio. 0 = muy corrupto.
+//
+// FH = Freedom in the World (Freedom House)
+//   Rating 1-7. 1 = libre. 7 = no libre.
 // ══════════════════════════════════════════════════════════════
 let WGI={AF:{PV:-2.72,GE:-1.63,CC:-1.56,RL:-2.28,VA:-1.84,RQ:-1.72},AL:{PV:-0.10,GE:-0.13,CC:-0.57,RL:-0.32,VA:0.14,RQ:-0.16},DZ:{PV:-0.72,GE:-0.50,CC:-0.79,RL:-0.71,VA:-1.41,RQ:-0.68},AO:{PV:-0.13,GE:-0.72,CC:-1.13,RL:-0.86,VA:-0.94,RQ:-0.76},AR:{PV:-0.16,GE:-0.14,CC:-0.49,RL:-0.56,VA:0.34,RQ:-0.37},AM:{PV:-0.47,GE:-0.02,CC:-0.48,RL:-0.19,VA:-0.68,RQ:-0.12},AU:{PV:0.93,GE:1.72,CC:1.81,RL:1.79,VA:1.38,RQ:1.83},AT:{PV:1.04,GE:1.53,CC:1.63,RL:1.77,VA:1.34,RQ:1.61},AZ:{PV:-0.40,GE:-0.03,CC:-0.85,RL:-0.70,VA:-1.55,RQ:-0.27},BD:{PV:-1.08,GE:-0.55,CC:-1.03,RL:-1.01,VA:-1.07,RQ:-0.50},BY:{PV:-0.35,GE:-0.14,CC:-0.72,RL:-0.98,VA:-1.84,RQ:-0.58},BE:{PV:0.58,GE:1.26,CC:1.46,RL:1.35,VA:1.27,RQ:1.36},BJ:{PV:-0.07,GE:-0.34,CC:-0.37,RL:-0.27,VA:0.21,RQ:-0.18},BO:{PV:-0.46,GE:-0.52,CC:-0.61,RL:-0.69,VA:0.04,RQ:-0.71},BA:{PV:-0.31,GE:-0.34,CC:-0.54,RL:-0.26,VA:-0.15,RQ:-0.11},BW:{PV:0.73,GE:0.57,CC:0.64,RL:0.66,VA:0.47,RQ:0.49},BR:{PV:-0.21,GE:-0.13,CC:-0.32,RL:-0.18,VA:0.41,RQ:0.02},BG:{PV:0.26,GE:0.11,CC:-0.07,RL:0.08,VA:0.65,RQ:0.27},BF:{PV:-2.14,GE:-0.83,CC:-0.63,RL:-1.15,VA:-0.89,RQ:-0.67},BI:{PV:-1.41,GE:-1.13,CC:-1.18,RL:-1.44,VA:-1.39,RQ:-1.21},KH:{PV:-0.26,GE:-0.44,CC:-1.13,RL:-0.99,VA:-1.48,RQ:-0.51},CM:{PV:-1.12,GE:-0.63,CC:-1.00,RL:-0.94,VA:-0.87,RQ:-0.71},CA:{PV:0.87,GE:1.80,CC:2.05,RL:1.82,VA:1.40,RQ:1.79},CF:{PV:-2.64,GE:-1.72,CC:-1.49,RL:-2.00,VA:-1.50,RQ:-1.65},TD:{PV:-1.83,GE:-1.29,CC:-1.49,RL:-1.47,VA:-1.46,RQ:-1.35},CL:{PV:0.61,GE:1.05,CC:1.19,RL:1.27,VA:0.87,RQ:1.24},CN:{PV:0.04,GE:0.43,CC:-0.30,RL:-0.29,VA:-1.65,RQ:0.35},CO:{PV:-1.30,GE:-0.15,CC:-0.44,RL:-0.50,VA:-0.33,RQ:0.01},CD:{PV:-2.40,GE:-1.62,CC:-1.68,RL:-2.05,VA:-1.27,RQ:-1.68},CG:{PV:-0.53,GE:-0.87,CC:-1.23,RL:-0.97,VA:-1.17,RQ:-0.89},CR:{PV:0.49,GE:0.23,CC:0.34,RL:0.48,VA:1.01,RQ:0.56},HR:{PV:0.66,GE:0.46,CC:0.09,RL:0.41,VA:0.77,RQ:0.60},CU:{PV:0.32,GE:-0.14,CC:-0.59,RL:-0.81,VA:-1.84,RQ:-0.43},CZ:{PV:0.93,GE:1.09,CC:0.56,RL:1.03,VA:1.01,RQ:1.10},DK:{PV:0.90,GE:2.09,CC:2.24,RL:1.94,VA:1.52,RQ:1.92},EG:{PV:-0.80,GE:-0.37,CC:-0.65,RL:-0.76,VA:-1.52,RQ:-0.32},SV:{PV:-0.64,GE:-0.29,CC:-0.71,RL:-0.64,VA:-0.24,RQ:-0.17},ET:{PV:-1.36,GE:-0.67,CC:-0.76,RL:-0.90,VA:-1.24,RQ:-0.64},FI:{PV:1.07,GE:2.05,CC:2.24,RL:2.01,VA:1.46,RQ:1.94},FR:{PV:0.41,GE:1.38,CC:1.42,RL:1.39,VA:1.08,RQ:1.22},GE:{PV:-0.45,GE:0.08,CC:0.04,RL:0.22,VA:-0.17,RQ:0.55},DE:{PV:0.65,GE:1.62,CC:1.83,RL:1.71,VA:1.31,RQ:1.60},GH:{PV:-0.04,GE:-0.05,CC:-0.28,RL:0.04,VA:0.61,RQ:-0.04},GR:{PV:0.46,GE:0.46,CC:0.00,RL:0.79,VA:0.98,RQ:0.44},GT:{PV:-0.83,GE:-0.64,CC:-0.93,RL:-1.01,VA:-0.24,RQ:-0.53},HT:{PV:-2.29,GE:-1.72,CC:-1.62,RL:-1.96,VA:-0.88,RQ:-1.69},HN:{PV:-0.84,GE:-0.73,CC:-0.96,RL:-1.13,VA:-0.39,RQ:-0.64},HU:{PV:0.50,GE:0.63,CC:-0.13,RL:0.34,VA:-0.06,RQ:0.80},IN:{PV:-1.00,GE:0.11,CC:-0.45,RL:-0.12,VA:0.11,RQ:-0.13},ID:{PV:-0.86,GE:-0.14,CC:-0.56,RL:-0.47,VA:0.09,RQ:0.22},IR:{PV:-1.12,GE:-0.89,CC:-1.00,RL:-1.18,VA:-1.79,RQ:-1.31},IQ:{PV:-2.13,GE:-1.22,CC:-1.44,RL:-1.46,VA:-0.95,RQ:-1.19},IE:{PV:0.96,GE:1.53,CC:1.65,RL:1.65,VA:1.27,RQ:1.77},IL:{PV:-0.96,GE:1.22,CC:0.97,RL:1.07,VA:0.79,RQ:1.36},IT:{PV:0.44,GE:0.46,CC:0.19,RL:0.72,VA:0.99,RQ:0.90},JP:{PV:0.89,GE:1.55,CC:1.55,RL:1.60,VA:1.02,RQ:1.31},JO:{PV:-0.36,GE:0.15,CC:-0.09,RL:0.22,VA:-0.89,RQ:0.27},KZ:{PV:-0.33,GE:-0.06,CC:-0.77,RL:-0.60,VA:-1.47,RQ:-0.18},KE:{PV:-0.85,GE:-0.43,CC:-0.91,RL:-0.68,VA:0.19,RQ:-0.12},KP:{PV:-1.15,GE:-1.82,CC:-1.68,RL:-2.18,VA:-2.17,RQ:-2.01},LA:{PV:-0.34,GE:-0.71,CC:-1.17,RL:-0.87,VA:-1.69,RQ:-0.73},LV:{PV:0.80,GE:0.90,CC:0.45,RL:0.95,VA:1.05,RQ:1.09},LB:{PV:-1.13,GE:-1.35,CC:-1.16,RL:-0.89,VA:-0.49,RQ:-1.09},LY:{PV:-2.14,GE:-1.54,CC:-1.52,RL:-1.70,VA:-1.36,RQ:-1.57},LT:{PV:0.79,GE:0.96,CC:0.55,RL:1.01,VA:1.02,RQ:1.17},MY:{PV:0.08,GE:0.98,CC:-0.01,RL:0.49,VA:-0.38,RQ:0.66},ML:{PV:-1.96,GE:-0.96,CC:-0.82,RL:-0.96,VA:-0.79,RQ:-0.85},MX:{PV:-1.04,GE:-0.06,CC:-0.69,RL:-0.88,VA:0.20,RQ:0.12},MD:{PV:-0.31,GE:-0.37,CC:-0.51,RL:-0.24,VA:-0.05,RQ:-0.14},MN:{PV:0.13,GE:-0.49,CC:-0.75,RL:-0.30,VA:0.31,RQ:-0.27},ME:{PV:-0.19,GE:-0.06,CC:-0.30,RL:0.03,VA:-0.09,RQ:0.19},MA:{PV:-0.77,GE:-0.04,CC:-0.40,RL:-0.12,VA:-0.77,RQ:0.07},MZ:{PV:-0.96,GE:-0.70,CC:-0.94,RL:-0.77,VA:-0.32,RQ:-0.61},MM:{PV:-2.00,GE:-1.11,CC:-1.45,RL:-1.42,VA:-1.83,RQ:-1.28},NP:{PV:-0.82,GE:-0.70,CC:-0.91,RL:-0.62,VA:0.07,RQ:-0.55},NL:{PV:0.76,GE:1.82,CC:1.95,RL:1.80,VA:1.44,RQ:1.82},NZ:{PV:1.22,GE:1.96,CC:2.21,RL:1.97,VA:1.55,RQ:1.95},NI:{PV:-0.28,GE:-0.89,CC:-0.90,RL:-1.05,VA:-1.54,RQ:-0.88},NE:{PV:-1.52,GE:-1.14,CC:-0.93,RL:-0.93,VA:-0.57,RQ:-0.99},NG:{PV:-2.05,GE:-1.00,CC:-1.19,RL:-1.24,VA:-0.35,RQ:-0.85},NO:{PV:1.03,GE:1.97,CC:2.16,RL:1.94,VA:1.55,RQ:1.82},PK:{PV:-2.32,GE:-0.64,CC:-0.96,RL:-0.80,VA:-0.93,RQ:-0.68},PA:{PV:0.19,GE:0.05,CC:-0.35,RL:0.16,VA:0.73,RQ:0.34},PY:{PV:-0.02,GE:-0.47,CC:-0.90,RL:-0.71,VA:0.20,RQ:-0.23},PE:{PV:-0.61,GE:-0.28,CC:-0.61,RL:-0.38,VA:0.10,RQ:0.00},PH:{PV:-1.34,GE:-0.03,CC:-0.56,RL:-0.54,VA:-0.15,RQ:0.01},PL:{PV:0.61,GE:0.74,CC:0.42,RL:0.37,VA:0.79,RQ:0.97},PT:{PV:1.11,GE:1.08,CC:1.02,RL:1.18,VA:1.21,RQ:1.10},RO:{PV:0.38,GE:0.14,CC:-0.20,RL:0.21,VA:0.68,RQ:0.37},RU:{PV:-1.30,GE:-0.21,CC:-1.04,RL:-0.95,VA:-1.38,RQ:-0.50},SA:{PV:-0.56,GE:0.31,CC:-0.23,RL:0.17,VA:-1.85,RQ:0.17},SN:{PV:-0.35,GE:-0.27,CC:-0.28,RL:-0.07,VA:0.46,RQ:-0.13},RS:{PV:-0.14,GE:-0.18,CC:-0.43,RL:-0.15,VA:-0.10,RQ:0.15},SG:{PV:1.14,GE:2.14,CC:2.11,RL:1.88,VA:-0.56,RQ:2.21},SK:{PV:0.79,GE:0.62,CC:0.01,RL:0.71,VA:0.93,RQ:0.91},SI:{PV:0.98,GE:0.99,CC:0.79,RL:0.98,VA:1.08,RQ:1.07},SO:{PV:-2.74,GE:-2.12,CC:-1.80,RL:-2.47,VA:-1.55,RQ:-2.05},ZA:{PV:-0.79,GE:0.07,CC:-0.56,RL:0.14,VA:0.81,RQ:0.19},KR:{PV:0.35,GE:1.09,CC:0.53,RL:1.00,VA:0.74,RQ:1.01},SS:{PV:-2.60,GE:-1.82,CC:-1.64,RL:-2.09,VA:-1.40,RQ:-1.78},ES:{PV:0.40,GE:1.03,CC:0.76,RL:1.07,VA:1.13,RQ:1.09},LK:{PV:-0.58,GE:-0.41,CC:-0.72,RL:-0.37,VA:-0.38,RQ:-0.43},SD:{PV:-2.25,GE:-1.47,CC:-1.46,RL:-1.63,VA:-1.64,RQ:-1.54},SE:{PV:1.03,GE:2.01,CC:2.27,RL:1.97,VA:1.48,RQ:1.90},CH:{PV:1.09,GE:2.02,CC:2.16,RL:1.90,VA:1.42,RQ:1.94},SY:{PV:-2.72,GE:-1.64,CC:-1.44,RL:-1.95,VA:-1.87,RQ:-1.73},TW:{PV:0.62,GE:1.25,CC:0.97,RL:1.04,VA:0.78,RQ:1.24},TZ:{PV:-0.41,GE:-0.35,CC:-0.72,RL:-0.46,VA:-0.73,RQ:-0.39},TH:{PV:-0.72,GE:0.22,CC:-0.43,RL:0.04,VA:-0.89,RQ:0.29},TN:{PV:-0.65,GE:-0.37,CC:-0.45,RL:-0.35,VA:-0.95,RQ:-0.23},TR:{PV:-1.37,GE:0.19,CC:-0.35,RL:-0.44,VA:-0.78,RQ:0.12},UG:{PV:-1.22,GE:-0.56,CC:-0.96,RL:-0.68,VA:-0.96,RQ:-0.68},UA:{PV:-2.06,GE:-0.45,CC:-0.79,RL:-0.48,VA:0.09,RQ:-0.25},AE:{PV:0.24,GE:1.24,CC:0.82,RL:0.65,VA:-1.41,RQ:1.23},GB:{PV:0.46,GE:1.57,CC:1.54,RL:1.68,VA:1.17,RQ:1.58},US:{PV:0.20,GE:1.46,CC:1.25,RL:1.43,VA:1.10,RQ:1.52},UY:{PV:0.66,GE:0.50,CC:0.89,RL:0.81,VA:1.09,RQ:0.83},VE:{PV:-1.80,GE:-1.55,CC:-1.67,RL:-1.88,VA:-1.66,RQ:-1.72},VN:{PV:-0.22,GE:-0.11,CC:-0.60,RL:-0.55,VA:-1.57,RQ:0.00},YE:{PV:-2.68,GE:-1.79,CC:-1.34,RL:-1.80,VA:-1.50,RQ:-1.58},ZM:{PV:-0.13,GE:-0.51,CC:-0.68,RL:-0.36,VA:0.17,RQ:-0.31},ZW:{PV:-1.17,GE:-1.04,CC:-1.17,RL:-0.98,VA:-0.97,RQ:-1.10}};
 let WDI={AF:{GDP:1516,EL:89,CO2:0.19,FR:2,UN:11.1,LIT:37,POV:55},AL:{GDP:16847,EL:100,CO2:1.9,FR:28,UN:11.8,LIT:98,POV:14},DZ:{GDP:11730,EL:99,CO2:3.8,FR:0.8,UN:11.7,LIT:81,POV:6},AO:{GDP:7595,EL:47,CO2:0.57,FR:46,UN:6.6,LIT:66,POV:32},AR:{GDP:23374,EL:100,CO2:4.1,FR:10,UN:6.2,LIT:99,POV:9},AM:{GDP:16285,EL:100,CO2:2.0,FR:11,UN:13.6,LIT:99,POV:27},AU:{GDP:58625,EL:100,CO2:14.8,FR:17,UN:3.7,LIT:99,POV:1},AT:{GDP:63585,EL:100,CO2:7.5,FR:47,UN:4.8,LIT:99,POV:1},AZ:{GDP:17530,EL:100,CO2:3.8,FR:11,UN:5.6,LIT:99,POV:5},BD:{GDP:7651,EL:97,CO2:0.61,FR:11,UN:5.1,LIT:74,POV:19},BY:{GDP:23062,EL:100,CO2:5.9,FR:42,UN:3.9,LIT:99,POV:1},BE:{GDP:59661,EL:100,CO2:8.1,FR:23,UN:5.5,LIT:99,POV:1},BJ:{GDP:4092,EL:45,CO2:0.58,FR:42,UN:1.5,LIT:45,POV:38},BO:{GDP:9283,EL:96,CO2:1.8,FR:51,UN:4.4,LIT:92,POV:14},BA:{GDP:18196,EL:100,CO2:5.7,FR:43,UN:12.9,LIT:98,POV:4},BW:{GDP:17742,EL:72,CO2:3.3,FR:20,UN:23.4,LIT:88,POV:16},BR:{GDP:16928,EL:99,CO2:2.2,FR:59,UN:7.8,LIT:93,POV:6},BG:{GDP:27993,EL:100,CO2:6.0,FR:36,UN:4.5,LIT:98,POV:3},BF:{GDP:2529,EL:22,CO2:0.23,FR:20,UN:5.5,LIT:46,POV:43},BI:{GDP:746,EL:11,CO2:0.06,FR:11,UN:1.5,LIT:68,POV:72},KH:{GDP:4795,EL:90,CO2:1.0,FR:46,UN:0.2,LIT:80,POV:17},CM:{GDP:4019,EL:66,CO2:0.38,FR:42,UN:3.6,LIT:77,POV:37},CA:{GDP:56843,EL:100,CO2:15.3,FR:38,UN:5.4,LIT:99,POV:1},CF:{GDP:1142,EL:14,CO2:0.07,FR:36,UN:7.0,LIT:37,POV:71},TD:{GDP:1603,EL:12,CO2:0.09,FR:9,UN:2.3,LIT:22,POV:42},CL:{GDP:27042,EL:100,CO2:4.7,FR:23,UN:8.6,LIT:96,POV:3},CN:{GDP:21464,EL:100,CO2:8.0,FR:23,UN:5.2,LIT:97,POV:1},CO:{GDP:17073,EL:100,CO2:1.7,FR:59,UN:10.2,LIT:95,POV:13},CD:{GDP:1561,EL:21,CO2:0.05,FR:56,UN:4.5,LIT:77,POV:62},CG:{GDP:7190,EL:47,CO2:0.87,FR:65,UN:11.2,LIT:80,POV:40},CR:{GDP:24071,EL:100,CO2:1.6,FR:58,UN:8.0,LIT:98,POV:4},HR:{GDP:36547,EL:100,CO2:4.0,FR:34,UN:6.1,LIT:99,POV:2},CU:{GDP:9000,EL:99,CO2:1.6,FR:32,UN:1.3,LIT:99,POV:4},CZ:{GDP:47440,EL:100,CO2:8.7,FR:34,UN:2.6,LIT:99,POV:1},DK:{GDP:67218,EL:100,CO2:5.4,FR:14,UN:5.0,LIT:99,POV:1},EG:{GDP:13919,EL:100,CO2:2.5,FR:1,UN:7.2,LIT:71,POV:30},SV:{GDP:10022,EL:95,CO2:1.2,FR:14,UN:4.3,LIT:89,POV:12},ET:{GDP:2769,EL:45,CO2:0.13,FR:15,UN:3.6,LIT:51,POV:31},FI:{GDP:54953,EL:100,CO2:6.6,FR:73,UN:7.4,LIT:99,POV:1},FR:{GDP:52449,EL:100,CO2:4.6,FR:31,UN:7.3,LIT:99,POV:1},GE:{GDP:18249,EL:100,CO2:2.8,FR:40,UN:17.6,LIT:99,POV:15},DE:{GDP:58114,EL:100,CO2:8.1,FR:33,UN:3.1,LIT:99,POV:1},GH:{GDP:6701,EL:84,CO2:0.53,FR:41,UN:3.9,LIT:79,POV:13},GR:{GDP:33540,EL:100,CO2:5.3,FR:31,UN:11.0,LIT:97,POV:5},GT:{GDP:10105,EL:93,CO2:1.0,FR:33,UN:2.5,LIT:83,POV:22},HT:{GDP:3017,EL:47,CO2:0.23,FR:3,UN:14.6,LIT:61,POV:59},HN:{GDP:6555,EL:92,CO2:1.1,FR:41,UN:5.2,LIT:88,POV:23},HU:{GDP:37470,EL:100,CO2:4.5,FR:22,UN:4.1,LIT:99,POV:2},IN:{GDP:9183,EL:99,CO2:1.9,FR:24,UN:4.2,LIT:74,POV:10},ID:{GDP:13362,EL:98,CO2:2.3,FR:56,UN:5.3,LIT:96,POV:10},IR:{GDP:14264,EL:100,CO2:8.0,FR:7,UN:8.6,LIT:85,POV:10},IQ:{GDP:10067,EL:93,CO2:4.5,FR:2,UN:15.6,LIT:85,POV:25},IE:{GDP:102390,EL:100,CO2:8.3,FR:11,UN:4.4,LIT:99,POV:1},IL:{GDP:48427,EL:100,CO2:6.7,FR:7,UN:3.5,LIT:97,POV:5},IT:{GDP:45867,EL:100,CO2:5.3,FR:31,UN:6.7,LIT:99,POV:2},JP:{GDP:43717,EL:100,CO2:8.5,FR:68,UN:2.6,LIT:99,POV:2},JO:{GDP:11434,EL:100,CO2:2.3,FR:1,UN:21.9,LIT:98,POV:15},KZ:{GDP:29178,EL:100,CO2:13.8,FR:1,UN:4.9,LIT:99,POV:1},KE:{GDP:5892,EL:76,CO2:0.38,FR:7,UN:5.4,LIT:82,POV:36},KP:{GDP:1700,EL:26,CO2:2.3,FR:47,UN:5.2,LIT:99,POV:42},LA:{GDP:7932,EL:97,CO2:2.2,FR:82,UN:1.1,LIT:85,POV:19},LV:{GDP:35618,EL:100,CO2:3.8,FR:54,UN:6.4,LIT:99,POV:2},LB:{GDP:10000,EL:99,CO2:3.7,FR:14,UN:29.6,LIT:95,POV:74},LY:{GDP:15000,EL:70,CO2:8.9,FR:0,UN:19.6,LIT:91,POV:12},LT:{GDP:45073,EL:100,CO2:4.5,FR:35,UN:6.9,LIT:99,POV:2},MY:{GDP:31862,EL:100,CO2:8.3,FR:58,UN:3.5,LIT:95,POV:2},ML:{GDP:2422,EL:52,CO2:0.30,FR:10,UN:6.9,LIT:35,POV:43},MX:{GDP:22219,EL:99,CO2:3.8,FR:34,UN:2.8,LIT:95,POV:16},MD:{GDP:14764,EL:100,CO2:2.0,FR:11,UN:3.4,LIT:99,POV:4},MN:{GDP:14218,EL:86,CO2:7.2,FR:9,UN:5.6,LIT:99,POV:29},ME:{GDP:24571,EL:100,CO2:4.7,FR:62,UN:15.0,LIT:98,POV:5},MA:{GDP:10000,EL:99,CO2:1.9,FR:12,UN:13.0,LIT:73,POV:4},MZ:{GDP:1337,EL:32,CO2:0.23,FR:66,UN:3.7,LIT:63,POV:64},MM:{GDP:3997,EL:71,CO2:0.65,FR:42,UN:2.5,LIT:89,POV:26},NP:{GDP:3821,EL:90,CO2:0.50,FR:45,UN:4.2,LIT:68,POV:16},NL:{GDP:65347,EL:100,CO2:8.3,FR:11,UN:3.7,LIT:99,POV:1},NZ:{GDP:48613,EL:100,CO2:7.2,FR:38,UN:3.7,LIT:99,POV:1},NI:{GDP:6423,EL:91,CO2:0.94,FR:25,UN:4.5,LIT:83,POV:15},NE:{GDP:1380,EL:19,CO2:0.11,FR:1,UN:0.6,LIT:35,POV:40},NG:{GDP:5765,EL:55,CO2:0.59,FR:25,UN:5.3,LIT:62,POV:40},NO:{GDP:82655,EL:100,CO2:8.3,FR:33,UN:3.6,LIT:99,POV:1},PK:{GDP:6034,EL:98,CO2:0.95,FR:5,UN:6.3,LIT:58,POV:24},PA:{GDP:31569,EL:95,CO2:2.7,FR:62,UN:9.4,LIT:95,POV:10},PY:{GDP:14350,EL:99,CO2:1.0,FR:44,UN:5.9,LIT:94,POV:10},PE:{GDP:14009,EL:95,CO2:1.6,FR:57,UN:6.4,LIT:94,POV:9},PH:{GDP:10173,EL:97,CO2:1.2,FR:29,UN:4.4,LIT:98,POV:10},PL:{GDP:38816,EL:100,CO2:7.7,FR:30,UN:3.0,LIT:99,POV:2},PT:{GDP:39025,EL:100,CO2:3.9,FR:36,UN:6.5,LIT:95,POV:2},RO:{GDP:35474,EL:100,CO2:4.1,FR:29,UN:5.5,LIT:99,POV:5},RU:{GDP:31762,EL:100,CO2:12.1,FR:50,UN:3.2,LIT:99,POV:2},SA:{GDP:49008,EL:100,CO2:16.3,FR:1,UN:5.9,LIT:97,POV:1},SN:{GDP:4176,EL:70,CO2:0.67,FR:43,UN:3.1,LIT:52,POV:37},RS:{GDP:24180,EL:100,CO2:6.1,FR:31,UN:9.1,LIT:98,POV:5},SG:{GDP:104031,EL:100,CO2:8.7,FR:23,UN:2.1,LIT:97,POV:1},SK:{GDP:35278,EL:100,CO2:5.7,FR:40,UN:5.8,LIT:99,POV:1},SI:{GDP:44278,EL:100,CO2:6.4,FR:62,UN:3.8,LIT:99,POV:1},SO:{GDP:880,EL:35,CO2:0.05,FR:10,UN:19.5,LIT:40,POV:69},ZA:{GDP:15218,EL:84,CO2:8.6,FR:8,UN:32.9,LIT:95,POV:18},KR:{GDP:47027,EL:100,CO2:12.3,FR:64,UN:2.7,LIT:99,POV:1},SS:{GDP:1125,EL:8,CO2:0.13,FR:11,UN:14.7,LIT:34,POV:82},ES:{GDP:46413,EL:100,CO2:5.1,FR:37,UN:11.8,LIT:98,POV:3},LK:{GDP:13180,EL:100,CO2:0.82,FR:33,UN:5.3,LIT:92,POV:4},SD:{GDP:4265,EL:57,CO2:0.53,FR:11,UN:16.3,LIT:61,POV:46},SE:{GDP:57213,EL:100,CO2:3.6,FR:69,UN:8.5,LIT:99,POV:1},CH:{GDP:77941,EL:100,CO2:4.2,FR:32,UN:4.3,LIT:99,POV:1},SY:{GDP:1700,EL:62,CO2:1.0,FR:3,UN:14.9,LIT:86,POV:69},TW:{GDP:55078,EL:100,CO2:11.5,FR:59,UN:3.6,LIT:98,POV:1},TZ:{GDP:3109,EL:43,CO2:0.20,FR:53,UN:2.6,LIT:78,POV:49},TH:{GDP:19518,EL:99,CO2:4.0,FR:37,UN:1.1,LIT:94,POV:7},TN:{GDP:12071,EL:100,CO2:2.7,FR:7,UN:16.1,LIT:82,POV:3},TR:{GDP:39014,EL:100,CO2:5.5,FR:29,UN:9.7,LIT:96,POV:5},UG:{GDP:2646,EL:44,CO2:0.13,FR:9,UN:1.8,LIT:79,POV:42},UA:{GDP:13399,EL:100,CO2:3.6,FR:16,UN:19.1,LIT:99,POV:2},AE:{GDP:75737,EL:100,CO2:20.4,FR:0,UN:2.7,LIT:97,POV:1},GB:{GDP:48912,EL:100,CO2:5.0,FR:13,UN:4.3,LIT:99,POV:1},US:{GDP:66144,EL:100,CO2:14.9,FR:33,UN:3.7,LIT:99,POV:2},UY:{GDP:25491,EL:100,CO2:2.1,FR:10,UN:8.4,LIT:98,POV:2},VE:{GDP:6000,EL:91,CO2:2.5,FR:52,UN:7.1,LIT:97,POV:45},VN:{GDP:13717,EL:100,CO2:3.3,FR:47,UN:2.0,LIT:95,POV:5},YE:{GDP:1800,EL:51,CO2:0.28,FR:1,UN:17.2,LIT:70,POV:48},ZM:{GDP:4003,EL:47,CO2:0.32,FR:66,UN:11.5,LIT:87,POV:58},ZW:{GDP:2877,EL:49,CO2:0.87,FR:24,UN:7.2,LIT:89,POV:30}};
@@ -404,6 +471,198 @@ let GDELT_DATA={AF:0.182,IQ:0.141,SY:0.138,YE:0.156,SD:0.167,MM:0.129,ET:0.118,S
 let RC_DATA={};
 let WB_YEAR='Embebido';
 let GDELT_HISTORY={};
+
+// ══════════════════════════════════════════════════════════════
+// RATINGS CREDITICIOS SOBERANOS — S&P · Moody's · Fitch
+// ══════════════════════════════════════════════════════════════
+// Fuente: Wikipedia "List of countries by credit rating" + countryeconomy.com
+// Datos: ratings de deuda soberana a largo plazo en moneda extranjera (2024-2025)
+// Sin API gratuita disponible → datos embebidos, actualizables manualmente.
+//
+// Escala numérica interna (ratingToScore):
+//   AAA/Aaa = 100 → máxima solvencia, riesgo mínimo
+//   AA+/Aa1 = 95, AA/Aa2 = 92, AA-/Aa3 = 89
+//   A+/A1   = 85, A/A2    = 82, A-/A3   = 79
+//   BBB+/Baa1=74, BBB/Baa2=70, BBB-/Baa3=66  ← umbral investment grade
+//   BB+/Ba1  =61, BB/Ba2   =57, BB-/Ba3  =53  ← speculative grade
+//   B+/B1    =47, B/B2     =43, B-/B3    =39
+//   CCC+/Caa1=30, CCC/Caa2 =22, CCC-/Caa3=15
+//   CC/Ca    =8,  C/C      =4,  D/SD/RD  =0   ← default
+//
+// CreditScore final = media de los scores disponibles (S&P + Moody's + Fitch)
+// Si solo hay 1 o 2 agencias, se usa la media de las disponibles.
+// ══════════════════════════════════════════════════════════════
+
+// Tabla de conversión: rating letra → score 0-100
+const RATING_SCORE = {
+  // S&P / Fitch scale
+  'AAA':100,'AA+':95,'AA':92,'AA-':89,
+  'A+':85,'A':82,'A-':79,
+  'BBB+':74,'BBB':70,'BBB-':66,
+  'BB+':61,'BB':57,'BB-':53,
+  'B+':47,'B':43,'B-':39,
+  'CCC+':30,'CCC':22,'CCC-':15,
+  'CC':8,'C':4,'SD':0,'D':0,'RD':0,'NR':null,
+  // Moody's scale
+  'Aaa':100,'Aa1':95,'Aa2':92,'Aa3':89,
+  'A1':85,'A2':82,'A3':79,
+  'Baa1':74,'Baa2':70,'Baa3':66,
+  'Ba1':61,'Ba2':57,'Ba3':53,
+  'B1':47,'B2':43,'B3':39,
+  'Caa1':30,'Caa2':22,'Caa3':15,
+  'Ca':8,'C':4,'WR':null,
+};
+
+function ratingToScore(r){ return r==null?null:(RATING_SCORE[r]??null); }
+
+// Datos soberanos: { SP, Moody, Fitch } — null = sin rating / retirado
+// Fuente: Wikipedia + countryeconomy.com (abril 2025)
+let CREDIT_RATINGS = {
+  AF:{SP:null,   Moody:null,  Fitch:null},   // Afghanistan — sin rating activo
+  AL:{SP:'B+',   Moody:'B1',  Fitch:'BB-'},
+  DZ:{SP:null,   Moody:'Baa3',Fitch:null},
+  AO:{SP:'B-',   Moody:'B3',  Fitch:'B'},
+  AR:{SP:'CCC',  Moody:'Caa3',Fitch:'CC'},
+  AM:{SP:'BB-',  Moody:'Ba3', Fitch:null},
+  AU:{SP:'AAA',  Moody:'Aaa', Fitch:'AAA'},
+  AT:{SP:'AA+',  Moody:'Aa1', Fitch:'AA+'},
+  AZ:{SP:'BB+',  Moody:'Ba1', Fitch:'BB+'},
+  BD:{SP:'BB-',  Moody:'Ba3', Fitch:'BB-'},
+  BY:{SP:null,   Moody:null,  Fitch:null},   // Belarus — ratings retirados
+  BE:{SP:'AA',   Moody:'Aa3', Fitch:'AA-'},
+  BJ:{SP:'B+',   Moody:null,  Fitch:'B+'},
+  BO:{SP:'CCC+', Moody:'Caa1',Fitch:'CCC+'},
+  BA:{SP:'B+',   Moody:'B3',  Fitch:null},
+  BW:{SP:'BBB+', Moody:'A3',  Fitch:'BBB+'},
+  BR:{SP:'BB',   Moody:'Ba1', Fitch:'BB'},
+  BG:{SP:'BBB',  Moody:'Baa1',Fitch:'BBB'},
+  BF:{SP:'CCC+', Moody:null,  Fitch:null},
+  BI:{SP:null,   Moody:null,  Fitch:null},
+  KH:{SP:'B+',   Moody:'B2',  Fitch:null},
+  CM:{SP:'B-',   Moody:'B2',  Fitch:'B-'},
+  CA:{SP:'AAA',  Moody:'Aaa', Fitch:'AA+'},
+  CF:{SP:null,   Moody:null,  Fitch:null},
+  TD:{SP:null,   Moody:null,  Fitch:null},
+  CL:{SP:'A-',   Moody:'Baa1',Fitch:'A-'},
+  CN:{SP:'A+',   Moody:'A1',  Fitch:'A+'},
+  CO:{SP:'BB+',  Moody:'Baa2',Fitch:'BB+'},
+  CD:{SP:null,   Moody:null,  Fitch:null},
+  CG:{SP:'CCC+', Moody:null,  Fitch:'CCC+'},
+  CR:{SP:'BB-',  Moody:'Ba2', Fitch:'BB-'},
+  HR:{SP:'BBB+', Moody:'Baa1',Fitch:'BBB+'},
+  CU:{SP:null,   Moody:null,  Fitch:null},
+  CZ:{SP:'AA-',  Moody:'Aa3', Fitch:'AA-'},
+  DK:{SP:'AAA',  Moody:'Aaa', Fitch:'AAA'},
+  EG:{SP:'B',    Moody:'Caa1',Fitch:'B'},
+  SV:{SP:'BB-',  Moody:'Caa1',Fitch:'B-'},
+  ET:{SP:'SD',   Moody:'Caa2',Fitch:'RD'},  // En restructuración de deuda
+  FI:{SP:'AA+',  Moody:'Aa1', Fitch:'AA+'},
+  FR:{SP:'AA-',  Moody:'Aa2', Fitch:'AA-'},
+  GE:{SP:'BB',   Moody:'Ba2', Fitch:'BB'},
+  DE:{SP:'AAA',  Moody:'Aaa', Fitch:'AAA'},
+  GH:{SP:'SD',   Moody:'Ca',  Fitch:'RD'},  // En restructuración de deuda
+  GR:{SP:'BBB-', Moody:'Baa3',Fitch:'BBB-'},
+  GT:{SP:'BB-',  Moody:'Ba2', Fitch:'BB-'},
+  HT:{SP:null,   Moody:null,  Fitch:null},
+  HN:{SP:'BB-',  Moody:null,  Fitch:'B+'},
+  HU:{SP:'BBB',  Moody:'Baa2',Fitch:'BBB'},
+  IN:{SP:'BBB-', Moody:'Baa3',Fitch:'BBB-'},
+  ID:{SP:'BBB',  Moody:'Baa2',Fitch:'BBB'},
+  IR:{SP:null,   Moody:null,  Fitch:null},
+  IQ:{SP:'B-',   Moody:'Caa1',Fitch:null},
+  IE:{SP:'AA',   Moody:'Aa3', Fitch:'AA'},
+  IL:{SP:'A+',   Moody:'Baa1',Fitch:'A'},   // Moody's bajó por conflicto Gaza
+  IT:{SP:'BBB',  Moody:'Baa3',Fitch:'BBB'},
+  JP:{SP:'A+',   Moody:'A1',  Fitch:'A'},
+  JO:{SP:'BB-',  Moody:'B1',  Fitch:'BB-'},
+  KZ:{SP:'BBB',  Moody:'Baa2',Fitch:'BBB'},
+  KE:{SP:'B',    Moody:'B3',  Fitch:'B'},
+  KP:{SP:null,   Moody:null,  Fitch:null},
+  LA:{SP:null,   Moody:'Caa3',Fitch:null},
+  LV:{SP:'A+',   Moody:'A2',  Fitch:'A-'},
+  LB:{SP:'SD',   Moody:'Ca',  Fitch:'RD'},  // Default desde 2020
+  LY:{SP:null,   Moody:null,  Fitch:null},
+  LT:{SP:'A+',   Moody:'A2',  Fitch:'A-'},
+  MY:{SP:'A-',   Moody:'A3',  Fitch:'BBB+'},
+  ML:{SP:null,   Moody:null,  Fitch:null},
+  MX:{SP:'BBB',  Moody:'Baa2',Fitch:'BBB-'},
+  MD:{SP:'B+',   Moody:null,  Fitch:null},
+  MN:{SP:'B',    Moody:'B3',  Fitch:'B'},
+  ME:{SP:'B+',   Moody:null,  Fitch:null},
+  MA:{SP:'BB+',  Moody:'Ba1', Fitch:'BB+'},
+  MZ:{SP:'CCC+', Moody:'Caa2',Fitch:'CCC'},
+  MM:{SP:null,   Moody:null,  Fitch:null},
+  NP:{SP:null,   Moody:null,  Fitch:null},
+  NL:{SP:'AAA',  Moody:'Aaa', Fitch:'AAA'},
+  NZ:{SP:'AA',   Moody:'Aaa', Fitch:'AA'},
+  NI:{SP:'B+',   Moody:'B3',  Fitch:null},
+  NE:{SP:null,   Moody:null,  Fitch:null},
+  NG:{SP:'B-',   Moody:'Caa1',Fitch:'B-'},
+  NO:{SP:'AAA',  Moody:'Aaa', Fitch:'AAA'},
+  PK:{SP:'CCC+', Moody:'Caa3',Fitch:'CCC+'},
+  PA:{SP:'BBB',  Moody:'Baa3',Fitch:'BBB-'},
+  PY:{SP:'BB+',  Moody:'Ba1', Fitch:'BB+'},
+  PE:{SP:'BBB',  Moody:'Baa1',Fitch:'BBB'},
+  PH:{SP:'BBB+', Moody:'Baa2',Fitch:'BBB'},
+  PL:{SP:'A-',   Moody:'A2',  Fitch:'A-'},
+  PT:{SP:'A-',   Moody:'A3',  Fitch:'A-'},
+  RO:{SP:'BBB-', Moody:'Baa3',Fitch:'BBB-'},
+  RU:{SP:null,   Moody:null,  Fitch:null},   // Ratings retirados tras invasión Ucrania
+  SA:{SP:'A+',   Moody:'A1',  Fitch:'A+'},
+  SN:{SP:'B+',   Moody:'Ba3', Fitch:'B+'},
+  RS:{SP:'BB+',  Moody:'Ba2', Fitch:'BB+'},
+  SG:{SP:'AAA',  Moody:'Aaa', Fitch:'AAA'},
+  SK:{SP:'A+',   Moody:'A2',  Fitch:'A'},
+  SI:{SP:'AA-',  Moody:'A2',  Fitch:'A'},
+  SO:{SP:null,   Moody:null,  Fitch:null},
+  ZA:{SP:'BB-',  Moody:'Ba2', Fitch:'BB-'},
+  KR:{SP:'AA',   Moody:'Aa2', Fitch:'AA-'},
+  SS:{SP:null,   Moody:null,  Fitch:null},
+  ES:{SP:'A',    Moody:'Baa1',Fitch:'A-'},
+  LK:{SP:'SD',   Moody:'Caa2',Fitch:'RD'},  // Restructuración completada 2024
+  SD:{SP:null,   Moody:null,  Fitch:null},
+  SE:{SP:'AAA',  Moody:'Aaa', Fitch:'AAA'},
+  CH:{SP:'AAA',  Moody:'Aaa', Fitch:'AAA'},
+  SY:{SP:null,   Moody:null,  Fitch:null},
+  TW:{SP:'AA',   Moody:'Aa3', Fitch:'AA'},
+  TZ:{SP:null,   Moody:'B2',  Fitch:'B+'},
+  TH:{SP:'BBB+', Moody:'Baa1',Fitch:'BBB+'},
+  TN:{SP:'CCC+', Moody:'Caa2',Fitch:'CCC+'},
+  TR:{SP:'BB+',  Moody:'B1',  Fitch:'BB-'},
+  UG:{SP:'B+',   Moody:'B2',  Fitch:'B+'},
+  UA:{SP:'SD',   Moody:'Caa3',Fitch:'RD'},  // En restructuración por guerra
+  AE:{SP:'AA',   Moody:'Aa2', Fitch:'AA-'},
+  GB:{SP:'AA',   Moody:'Aa3', Fitch:'AA-'},
+  US:{SP:'AA+',  Moody:'Aa1', Fitch:'AA+'},  // Moody's bajó de Aaa en mayo 2025
+  UY:{SP:'BBB',  Moody:'Baa2',Fitch:'BBB'},
+  VE:{SP:'SD',   Moody:'C',   Fitch:'RD'},
+  VN:{SP:'BB+',  Moody:'Ba2', Fitch:'BB+'},
+  YE:{SP:null,   Moody:null,  Fitch:null},
+  ZM:{SP:'SD',   Moody:'Caa2',Fitch:'RD'},  // Restructuración 2023
+  ZW:{SP:null,   Moody:null,  Fitch:null},
+};
+
+// creditScore(iso): calcula la media de los scores disponibles de las 3 agencias
+// Devuelve 0-100 o null si no hay ningún rating.
+function creditScore(iso){
+  const r=CREDIT_RATINGS[iso];
+  if(!r)return null;
+  const parts=[ratingToScore(r.SP),ratingToScore(r.Moody),ratingToScore(r.Fitch)]
+    .filter(v=>v!=null);
+  return parts.length?Math.round(parts.reduce((a,b)=>a+b,0)/parts.length):null;
+}
+
+// creditLabel(score): etiqueta legible del rating crediticio
+function creditLabel(score){
+  if(score==null)return{label:'Sin rating',color:'#94a3b8'};
+  if(score>=95) return{label:'AAA — Máxima solvencia',color:'#166534'};
+  if(score>=85) return{label:'AA — Muy alta solvencia',color:'#166534'};
+  if(score>=79) return{label:'A — Alta solvencia',color:'#15803d'};
+  if(score>=66) return{label:'BBB — Grado de inversión',color:'#854d0e'};
+  if(score>=53) return{label:'BB — Especulativo',color:'#c2410c'};
+  if(score>=39) return{label:'B — Alto riesgo',color:'#991b1b'};
+  return              {label:'CCC/D — Riesgo muy alto / Default',color:'#7f1d1d'};
+}
 
 // ══════════════════════════════════════════════════════════════
 // COUNTRY NAMES & MAPS
@@ -418,7 +677,18 @@ const WGI_INDS={PV:'PV.EST.NO.SE',GE:'GE.EST.NO.SE',CC:'CC.EST.NO.SE',RL:'RL.EST
 const WDI_INDS={GDP:'NY.GDP.PCAP.PP.KD',EL:'EG.ELC.ACCS.ZS',CO2:'EN.ATM.CO2E.PC',FR:'AG.LND.FRST.ZS',UN:'SL.UEM.TOTL.ZS',LIT:'SE.ADT.LITR.ZS',POV:'SI.POV.NAHC'};
 
 // ══════════════════════════════════════════════════════════════
-// GDELT helpers
+// GDELT — CONVERSIÓN A KPI LEGIBLE
+// ══════════════════════════════════════════════════════════════
+// GDELT mide "inestabilidad" en un rango 0.00 - 0.20+
+// (más alto = más inestable, más difícil de interpretar).
+// Lo convertimos a un KPI 0-100 donde 100 = máxima estabilidad.
+//
+// gdeltToKPI(raw): KPI = max(0, 100 - raw × 500)
+//   Ejemplo: Ucrania raw=0.172 → KPI=14  → Crisis severa
+//   Ejemplo: España  raw=0.008 → KPI=96  → Muy estable
+//
+// gdeltLabel(kpi): devuelve emoji + texto + color según el KPI
+//   para mostrarlo en tooltip, tabla y modal de forma consistente.
 // ══════════════════════════════════════════════════════════════
 function gdeltToKPI(raw){return raw==null?null:Math.max(0,Math.round(100-raw*500));}
 function gdeltLabel(kpi){
@@ -431,7 +701,38 @@ function gdeltLabel(kpi){
 }
 
 // ══════════════════════════════════════════════════════════════
-// SCORING
+// FÓRMULA DE SCORING — EL CORAZÓN DE LA APP
+// ══════════════════════════════════════════════════════════════
+// buildScore(iso): calcula la puntuación 0-100 de un país.
+//
+// PASO 1 — Normalización
+//   Cada variable viene en unidades distintas (dólares, %, índice...).
+//   Las convertimos todas a escala 0-100 para poder combinarlas.
+//   wn(v)  = convierte WGI (-2.5 a +2.5) → 0-100
+//   nr(v)  = convierte cualquier variable con min/max → 0-100
+//            inv=true significa que más bajo es mejor (ej: desempleo)
+//
+// PASO 2 — Índice Social compuesto
+//   Social = Libertades×0.38 + CapHumano×0.25 + Empleo×0.20 + Pobreza×0.17
+//   Solo se calcula con las partes disponibles (si falta alguna,
+//   se redistribuye el peso entre las demás).
+//
+// PASO 3 — CountryScore (media ponderada)
+//   CountryScore = Σ(variable × peso) / Σ(pesos disponibles)
+//   Si un dato falta, ese peso se reparte entre los demás.
+//   Pesos: PoliticalStability=0.20, Governance=0.10, Corruption=0.10...
+//
+// PASO 4 — Penalización GDELT
+//   Si GDELT detecta conflicto activo, el score se reduce:
+//   raw > 0.08 → ×0.40  (guerra abierta, score se reduce al 40%)
+//   raw > 0.04 → ×0.65  (conflicto activo)
+//   raw > 0.02 → ×0.85  (tensión)
+//
+// RESULTADO:
+//   CountryScore ≥ 65 → Riesgo BAJO
+//   CountryScore 40-64 → Riesgo MEDIO
+//   CountryScore < 40 → Riesgo ALTO
+//   isConflict=true → etiqueta especial ⚠ CONFLICTO
 // ══════════════════════════════════════════════════════════════
 function wn(v){return v==null?null:Math.round(((v+2.5)/5)*100);}
 function nr(v,mn,mx,inv=false){if(v==null)return null;let p=(Math.max(mn,Math.min(mx,v))-mn)/(mx-mn)*100;return Math.round(inv?100-p:p);}
@@ -443,9 +744,12 @@ function buildScore(iso){
   const EV=EN!=null&&BIO!=null?Math.round((EN+BIO)/2):EN??BIO;
   const COR=CPI[iso]??CC;
   const CL=FH[iso]!=null?Math.round((7-FH[iso])/6*100):null;
+  const CR=creditScore(iso); // Rating crediticio S&P + Moody's + Fitch (0-100)
   const socParts=[[CL,.38],[LIT,.25],[WC,.20],[POV,.17]].filter(([v])=>v!=null);
   const SOC=socParts.length?Math.round(socParts.reduce((a,[v,wt])=>a+v*wt,0)/socParts.reduce((a,[,wt])=>a+wt,0)):null;
-  const parts=[[PS,.20],[GV,.10],[COR,.10],[RL,.08],[CL,.08],[VA,.06],[RQ,.06],[FN,.08],[LIT,.05],[EL,.04],[WC,.04],[POV,.04],[EN,.03],[BIO,.02],[EV,.02]].filter(([v])=>v!=null);
+  // Pesos actualizados: CreditRating tiene peso 0.08 (refleja solvencia financiera soberana)
+  // Se reduce Financial de 0.08 a 0.05 y Environmental de 0.03 a 0.02 para compensar
+  const parts=[[PS,.20],[GV,.10],[COR,.10],[RL,.08],[CL,.08],[VA,.06],[RQ,.06],[FN,.05],[CR,.08],[LIT,.05],[EL,.04],[WC,.04],[POV,.04],[EN,.02],[BIO,.02],[EV,.02]].filter(([v])=>v!=null);
   let sc=0,wt=0;parts.forEach(([v,pw])=>{sc+=v*pw;wt+=pw;});
   if(wt<0.25)return null;
   let cs=Math.round(sc/wt);
@@ -454,10 +758,12 @@ function buildScore(iso){
   cs=Math.max(0,Math.min(100,cs));
   const isCon=CONF.has(iso)||(g!=null&&g>0.04)||(cs<20);
   const gKPI=gdeltToKPI(g);
+  const cr=CREDIT_RATINGS[iso]||{};
   return{iso,country:N2[iso]||iso,CountryScore:cs,RL:cs>=65?'low':cs>=40?'medium':'high',isConflict:isCon,
     PoliticalStability:PS,Governance:GV,Corruption:COR,RuleOfLaw:RL,Voice:VA,InstitutionalCapacity:RQ,
     CivilLiberties:CL,HumanCapital:LIT,WorkingConditions:WC,SocialVulnerability:POV,Social:SOC,
     Financial:FN,Infrastructure:EL,Environmental:EN,BiodiversityAndDeforestation:BIO,EnvironmentalVulnerability:EV,
+    CreditRating:CR,SP:cr.SP||null,Moody:cr.Moody||null,Fitch:cr.Fitch||null,
     GdeltRaw:g,GdeltKPI:gKPI,srcCPI:CPI[iso]!=null?'TI CPI 2024':'WGI CC',srcFH:FH[iso]!=null?'FH 2025':'—',
     wbLive:false};
 }
@@ -675,6 +981,26 @@ function applyWGI(){const rows=parseCSV(document.getElementById('wgiPaste').valu
 function applyWDI(){const rows=parseCSV(document.getElementById('wdiPaste').value);let n=0;rows.forEach(([iso,GDP,EL,CO2,FR,UN,LIT,POV])=>{if(!iso||iso.length!==2)return;const e={};[['GDP',GDP],['EL',EL],['CO2',CO2],['FR',FR],['UN',UN],['LIT',LIT],['POV',POV]].forEach(([k,v])=>{if(v!==undefined&&v!=='')e[k]=parseFloat(v);});WDI[iso.toUpperCase()]={...(WDI[iso.toUpperCase()]||{}),...e};n++;});rebuildAll();renderMap(true);renderTable();showUpResult('wdiResult',true,`✅ WDI: ${n} países actualizados`);}
 function applyCPI(){const rows=parseCSV(document.getElementById('cpiPaste').value);let n=0;rows.forEach(([iso,val])=>{if(!iso||iso.length!==2||!val)return;CPI[iso.toUpperCase()]=parseFloat(val);n++;});rebuildAll();renderMap(true);renderTable();showUpResult('cpiResult',true,`✅ CPI: ${n} países`);}
 function applyFH(){const rows=parseCSV(document.getElementById('fhPaste').value);let n=0;rows.forEach(([iso,val])=>{if(!iso||iso.length!==2||!val)return;FH[iso.toUpperCase()]=parseInt(val);n++;});rebuildAll();renderMap(true);renderTable();showUpResult('fhResult',true,`✅ FH: ${n} países`);}
+function applyRatings(){
+  const rows=parseCSV(document.getElementById('ratingsPaste').value);
+  let n=0;
+  rows.forEach(([iso,sp,mo,fi])=>{
+    if(!iso||iso.length!==2)return;
+    const k=iso.toUpperCase();
+    if(!CREDIT_RATINGS[k])CREDIT_RATINGS[k]={SP:null,Moody:null,Fitch:null};
+    CREDIT_RATINGS[k].SP   = (!sp  ||sp==='-') ?null:sp.trim();
+    CREDIT_RATINGS[k].Moody= (!mo  ||mo==='-') ?null:mo.trim();
+    CREDIT_RATINGS[k].Fitch= (!fi  ||fi==='-') ?null:fi.trim();
+    n++;
+  });
+  rebuildAll();renderMap(true);renderTable();
+  showUpResult('ratingsResult',true,`✅ Ratings actualizados: ${n} países`);
+}
+function exportCurrentRatings(){
+  const csv='ISO2,SP,Moody,Fitch\n'+
+    Object.entries(CREDIT_RATINGS).map(([k,v])=>`${k},${v.SP||'-'},${v.Moody||'-'},${v.Fitch||'-'}`).join('\n');
+  dl(csv,'ratings_current.csv');
+}
 function applyGDELT(){const rows=parseCSV(document.getElementById('gdeltPaste').value);let n=0;rows.forEach(([iso,val])=>{if(!iso||iso.length!==2||!val)return;GDELT_DATA[iso.toUpperCase()]=parseFloat(val);n++;});rebuildAll();renderMap(true);renderTable();showUpResult('gdeltResult',true,`✅ GDELT: ${n} países`);}
 function exportCurrentWGI(){dl('ISO2,PV,GE,CC,RL,VA,RQ\n'+Object.entries(WGI).map(([k,v])=>`${k},${v.PV??''},${v.GE??''},${v.CC??''},${v.RL??''},${v.VA??''},${v.RQ??''}`).join('\n'),'wgi.csv');}
 function exportCurrentWDI(){dl('ISO2,GDP,EL,CO2,FR,UN,LIT,POV\n'+Object.entries(WDI).map(([k,v])=>`${k},${v.GDP??''},${v.EL??''},${v.CO2??''},${v.FR??''},${v.UN??''},${v.LIT??''},${v.POV??''}`).join('\n'),'wdi.csv');}
@@ -708,16 +1034,18 @@ let mapOk=false;
 const GC={Gobernanza:'#7f77dd',Social:'#378add',Financiero:'#ba7517',Ambiental:'#1d9e75'};
 function fillC(iso){const r=allData[iso];if(!r)return'#cbd5e1';if(r.isConflict)return'#7f1d1d';if(r.CountryScore>=65)return'#22c55e';if(r.CountryScore>=55)return'#eab308';if(r.CountryScore>=40)return'#f97316';return'#dc2626';}
 
-function renderMap(upd=false){
+async function renderMap(upd=false){
   const wrap=document.getElementById('mapWrap');
   if(upd&&mapOk&&window.d3){d3.selectAll('path.land').attr('fill',d=>fillC(NUM2[+d.id]));return;}
   if(mapOk)return;
   document.getElementById('mapMsg').style.display='none';
+  // Esperamos un tick para que el DOM haya pintado el contenedor con su ancho real
+  await new Promise(r=>setTimeout(r,50));
   function ldS(s){return new Promise(r=>{if(document.querySelector(`script[src="${s}"]`))return r();const el=document.createElement('script');el.src=s;el.onload=r;document.head.appendChild(el);});}
   Promise.all([ldS('https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js'),ldS('https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js')])
   .then(()=>fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r=>r.json()))
   .then(world=>{
-    const W=wrap.clientWidth||900,H=Math.round(W*0.5);
+    const W=Math.max(wrap.clientWidth||900, wrap.offsetWidth||900),H=Math.round(W*0.5);
     wrap.style.minHeight=H+'px';
     const svg=d3.select(wrap).insert('svg','#mt').attr('width',W).attr('height',H).style('width','100%').style('height',H+'px').style('display','block');
     svg.append('rect').attr('width',W).attr('height',H).attr('fill','#bfdbfe');
@@ -758,6 +1086,9 @@ const COLS=[
   {k:'CountryScore',l:'Score',w:50,fn:(v,r)=>`<b style="font-size:13px;color:${sc2c(v,r)}">${v}</b>`},
   {k:'RL',l:'Nivel',w:82,fn:(_,r)=>bH(r)},
   {k:'GdeltKPI',l:'Estabilidad',w:150,fn:(v)=>{if(v==null)return'<span style="color:#ccc;font-size:10px">—</span>';const gl=gdeltLabel(v);return`<span class="gdelt-pill" style="background:${gl.bg};color:${gl.color}">${gl.emoji} ${v}/100 · ${gl.label}</span>`;}},
+  {k:'SP',   l:'S&P',    w:55, fn:(v)=>{const s=ratingToScore(v);const col=s==null?'#94a3b8':s>=66?'#166534':s>=53?'#854d0e':'#991b1b';return v?`<span style="font-size:11px;font-weight:700;color:${col}">${v}</span>`:`<span style="color:#d1d5db;font-size:10px">—</span>`;}},
+  {k:'Moody',l:"Moody's",w:65, fn:(v)=>{const s=ratingToScore(v);const col=s==null?'#94a3b8':s>=66?'#166534':s>=53?'#854d0e':'#991b1b';return v?`<span style="font-size:11px;font-weight:700;color:${col}">${v}</span>`:`<span style="color:#d1d5db;font-size:10px">—</span>`;}},
+  {k:'Fitch',l:'Fitch',  w:55, fn:(v)=>{const s=ratingToScore(v);const col=s==null?'#94a3b8':s>=66?'#166534':s>=53?'#854d0e':'#991b1b';return v?`<span style="font-size:11px;font-weight:700;color:${col}">${v}</span>`:`<span style="color:#d1d5db;font-size:10px">—</span>`;}},
   {k:'PoliticalStability',l:'Pol.Est.',w:60,g:'Gobernanza'},{k:'Governance',l:'Gobernanza',w:68,g:'Gobernanza'},
   {k:'Corruption',l:'Corrupción',w:68,g:'Gobernanza'},{k:'RuleOfLaw',l:'Est.Der.',w:60,g:'Gobernanza'},
   {k:'Voice',l:'Voz',w:50,g:'Gobernanza'},{k:'InstitutionalCapacity',l:'Cap.Inst.',w:62,g:'Gobernanza'},
@@ -827,6 +1158,46 @@ async function openModal(iso){
     </div>
   </div>`:'';
 
+  // Bloque de ratings crediticios
+  const cr=CREDIT_RATINGS[r.iso]||{};
+  const crScore=r.CreditRating;
+  const crLbl=creditLabel(crScore);
+  const agencyPills=[
+    cr.SP  ?`<span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:12px"><b style="color:#1e40af">S&P</b> <b style="color:${crLbl.color}">${cr.SP}</b></span>`:'',
+    cr.Moody?`<span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:12px"><b style="color:#1e40af">Moody's</b> <b style="color:${crLbl.color}">${cr.Moody}</b></span>`:'',
+    cr.Fitch?`<span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:12px"><b style="color:#1e40af">Fitch</b> <b style="color:${crLbl.color}">${cr.Fitch}</b></span>`:'',
+  ].filter(Boolean).join('');
+  // Construye una fila de barra horizontal igual que las demás variables del modal
+  function creditVrow(label, ratingStr, score, src, col){
+    const p = score!=null ? Math.max(0,Math.min(100,Math.round(score))) : null;
+    return `<div class="vrow">
+      <div class="vlabel">
+        <span style="color:#374151;font-weight:600">${label}</span>
+        <span class="vsrc">${src}${ratingStr?` · <b style="color:${col}">${ratingStr}</b>`:''}</span>
+      </div>
+      <div class="vbar">
+        <div class="vbarBg"><div class="vbarFl" style="width:${p??0}%;background:${col}"></div></div>
+        <span class="vval" style="color:${col}">${p??'—'}</span>
+      </div>
+    </div>`;
+  }
+
+  const creditColor='#7c3aed'; // Violeta — color propio para la sección de ratings
+  const spScore  = ratingToScore(cr.SP);
+  const myScore  = ratingToScore(cr.Moody);
+  const fiScore  = ratingToScore(cr.Fitch);
+
+  const creditBoxHTML=`<div class="grp">
+    <div class="gtitle" style="color:${creditColor};border-color:${creditColor}30">🏦 Ratings Crediticios Soberanos — S&P · Moody's · Fitch</div>
+    ${cr.SP||cr.Moody||cr.Fitch
+      ? creditVrow('S&P Global',        cr.SP||'Sin rating',   spScore, 'S&P Global Ratings 2024-25',   creditColor)
+      + creditVrow("Moody's",           cr.Moody||'Sin rating',myScore, "Moody's Investors Service",    creditColor)
+      + creditVrow('Fitch Ratings',     cr.Fitch||'Sin rating',fiScore, 'Fitch Ratings 2024-25',        creditColor)
+      + creditVrow('Media agencias',    crScore!=null?crLbl.label:'Sin rating', crScore, 'Promedio S&P + Moody\'s + Fitch · Peso en modelo: 8%', creditColor)
+      : `<div style="font-size:12px;color:#94a3b8;padding:4px 0">Sin rating soberano activo — país en conflicto, default o no calificado por las agencias.</div>`
+    }
+    <div style="font-size:10px;color:#94a3b8;margin-top:2px">Fuente: S&P Global · Moody's · Fitch Ratings · Datos 2024-2025 · Sin API gratuita disponible · Actualización manual</div>
+  </div>`;
   const groups=[
     {g:'Gobernanza',c:'#7f77dd',ks:[['PoliticalStability','Estab. política','WGI PV.EST + GDELT'],['Governance','Gobernanza','WGI GE.EST'],['Corruption','Corrupción',r.srcCPI],['RuleOfLaw','Est. Derecho','WGI RL.EST'],['Voice','Voz y Rendición','WGI VA.EST'],['InstitutionalCapacity','Cap. Institucional','WGI RQ.EST']]},
     {g:'Social',c:'#378add',ks:[['CivilLiberties','Libertades Civiles',r.srcFH],['HumanCapital','Capital Humano','WDI alfabetización'],['WorkingConditions','Cond. Laborales','WDI desempleo inv.'],['SocialVulnerability','Vulnerab. Social','WDI pobreza inv.'],['Social','Social (compuesto)','Ponderado']]},
@@ -837,6 +1208,7 @@ async function openModal(iso){
   document.getElementById('mb').innerHTML=
     rcHTML+
     gdeltBoxHTML+
+    creditBoxHTML+
     `<div class="histBox">
       <h4>📈 Evolución de la estabilidad — Últimos 14 días</h4>
       <div id="histChart"><span style="font-size:11px;color:#94a3b8">⏳ Cargando...</span></div>
@@ -905,6 +1277,86 @@ rebuildAll();
 renderMap(false);
 // Auto-load REST Countries on start (lightweight, ~2MB, no key needed)
 loadRestCountries();
+
+// ── OVERRIDE FINAL openModal — orden garantizado ──────────────
+openModal = async function(iso){
+  const r=allData[iso]; if(!r)return;
+  const rc=RC_DATA[iso]||null;
+  const al=r.isConflict;
+  const gl=r.GdeltKPI!=null?gdeltLabel(r.GdeltKPI):null;
+
+  // Cabecera modal
+  document.getElementById('mh').innerHTML=`
+    <div style="flex:1">
+      ${al?`<div style="font-size:11px;font-weight:700;color:#991b1b;background:#fee2e2;padding:2px 10px;border-radius:99px;display:inline-block;margin-bottom:8px">⚠ CONFLICTO ACTIVO</div><br>`:''}
+      <div style="display:flex;align-items:center;gap:10px">
+        ${rc?.flag?`<img src="${rc.flag}" style="height:28px;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.2)" loading="lazy">`:''}
+        <div style="font-size:21px;font-weight:800;color:${al?'#991b1b':'#111'}">${r.country}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
+        <span style="font-size:30px;font-weight:800;color:${sc2c(r.CountryScore,r)}">${r.CountryScore}</span>
+        ${bH(r)}
+      </div>
+    </div>
+    <button onclick="document.getElementById('ov').style.display='none'" style="background:none;border:none;font-size:24px;cursor:pointer;color:#6b7280;line-height:1;flex-shrink:0">✕</button>`;
+
+  // Helper barra
+  const B=(l,s,v,c)=>{const p=v!=null?Math.max(0,Math.min(100,Math.round(+v))):null;return`<div class="vrow"><div class="vlabel"><span style="color:#374151;font-weight:600">${l}</span><span class="vsrc">${s}</span></div><div class="vbar"><div class="vbarBg"><div class="vbarFl" style="width:${p??0}%;background:${c}"></div></div><span class="vval">${p??'—'}</span></div></div>`;};
+
+  // Construir body
+  const M=[];
+
+  // BLOQUE 1 — REST Countries
+  if(rc) M.push(`<div class="cinfo">${rc.capital?`<div class="cpill">🏛 Capital: <b>${rc.capital}</b></div>`:''}${rc.region?`<div class="cpill">🌍 ${rc.region}</div>`:''}${rc.languages&&rc.languages!=='—'?`<div class="cpill">🗣 <b>${rc.languages.split(',')[0]}</b></div>`:''}${rc.currency&&rc.currency!=='—'?`<div class="cpill">💱 <b>${rc.currency.split(',')[0]}</b></div>`:''}${rc.population?`<div class="cpill">👥 <b>${(rc.population/1e6).toFixed(1)}M</b></div>`:''}</div>`);
+
+  // BLOQUE 2 — GDELT
+  if(gl) M.push(`<div class="gdeltBox" style="background:${gl.bg};border-color:${gl.color}30"><div class="gdeltKPI" style="color:${gl.color}">${r.GdeltKPI}</div><div class="gdeltInfo"><div class="gdeltLabel" style="color:${gl.color}">${gl.emoji} ${gl.label}</div><div class="gdeltSub" style="color:${gl.color}">${gl.sub}</div><div style="font-size:10px;color:${gl.color};opacity:.6;margin-top:4px">Índice de Estabilidad GDELT · 0 crisis · 100 máxima calma</div></div></div>`);
+
+  // BLOQUE 3 — Historial
+  M.push(`<div class="histBox"><h4>📈 Evolución — Últimos 14 días</h4><div id="histChart"><span style="font-size:11px;color:#94a3b8">⏳ Cargando...</span></div></div>`);
+
+  // BLOQUE 4 — Noticias
+  M.push(`<div class="newsBox"><h4>📰 Noticias recientes — GDELT DOC API v2</h4><div id="newsContent"><div class="newsLoading">⏳ Cargando noticias...</div></div></div>`);
+
+  // BLOQUE 5 — Gobernanza
+  M.push(`<div class="grp"><div class="gtitle" style="color:#7f77dd;border-color:#7f77dd30">Gobernanza</div>${[['PoliticalStability','Estab. política','WGI PV.EST + GDELT'],['Governance','Gobernanza','WGI GE.EST'],['Corruption','Corrupción',r.srcCPI],['RuleOfLaw','Est. Derecho','WGI RL.EST'],['Voice','Voz','WGI VA.EST'],['InstitutionalCapacity','Cap. Institucional','WGI RQ.EST']].map(([k,l,s])=>B(l,s,r[k],al&&k==='PoliticalStability'?'#991b1b':'#7f77dd')).join('')}</div>`);
+
+  // BLOQUE 6 — Social
+  M.push(`<div class="grp"><div class="gtitle" style="color:#378add;border-color:#378add30">Social</div>${[['CivilLiberties','Libertades Civiles',r.srcFH],['HumanCapital','Capital Humano','WDI'],['WorkingConditions','Cond. Laborales','WDI'],['SocialVulnerability','Vulnerab. Social','WDI'],['Social','Social (compuesto)','Ponderado']].map(([k,l,s])=>B(l,s,r[k],'#378add')).join('')}</div>`);
+
+  // BLOQUE 7 — Financiero
+  M.push(`<div class="grp"><div class="gtitle" style="color:#ba7517;border-color:#ba751730">Financiero</div>${[['Financial','PIB per cápita PPP',`WDI ${WB_YEAR}`],['Infrastructure','Electricidad %',`WDI ${WB_YEAR}`]].map(([k,l,s])=>B(l,s,r[k],'#ba7517')).join('')}</div>`);
+
+  // BLOQUE 8 — Ambiental
+  M.push(`<div class="grp"><div class="gtitle" style="color:#1d9e75;border-color:#1d9e7530">Ambiental</div>${[['Environmental','CO₂ (invertido)',`WDI ${WB_YEAR}`],['BiodiversityAndDeforestation','Biodiversidad/Forestal',`WDI ${WB_YEAR}`],['EnvironmentalVulnerability','Vulnerab. Ambiental','Estimado']].map(([k,l,s])=>B(l,s,r[k],'#1d9e75')).join('')}</div>`);
+
+  // BLOQUE 9 — Ratings crediticios (ÚLTIMO)
+  const RC='#7c3aed';
+  const CR=CREDIT_RATINGS[r.iso]||{};
+  const CRS=r.CreditRating;
+  const CRL=creditLabel(CRS);
+  M.push(`<div class="grp"><div class="gtitle" style="color:${RC};border-color:${RC}30">🏦 Ratings Crediticios — S&P · Moody's · Fitch</div>${CR.SP||CR.Moody||CR.Fitch?B('S&P Global',`S&P 2024-25 · <b style="color:${RC}">${CR.SP||'—'}</b>`,ratingToScore(CR.SP),RC)+B("Moody's",`Moody's · <b style="color:${RC}">${CR.Moody||'—'}</b>`,ratingToScore(CR.Moody),RC)+B('Fitch',`Fitch 2024-25 · <b style="color:${RC}">${CR.Fitch||'—'}</b>`,ratingToScore(CR.Fitch),RC)+B('Media agencias',`S&amp;P+Moody's+Fitch · 8% · ${CRL.label}`,CRS,RC):'<div style="font-size:12px;color:#94a3b8;padding:4px 0">Sin rating soberano activo.</div>'}<div style="font-size:10px;color:#94a3b8;margin-top:4px">S&P · Moody's · Fitch · 2024-2025 · Actualiza en "Actualizar datos"</div></div>`);
+
+  // BLOQUE 10 — Pie
+  M.push(`<div style="padding:10px 13px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;font-size:11px;color:#6b7280;line-height:1.8;margin-top:4px"><b style="color:#374151">Fuentes:</b> WGI ${WB_YEAR} ${r.Governance!=null?'✅':'❌'} · WDI ${r.Financial!=null?'✅':'❌'} · ${r.srcCPI} · ${r.srcFH} · GDELT ${r.GdeltRaw!=null?'✅':'snapshot'} · RC ${rc?'✅':'⏳'} · Ratings ${CR.SP||CR.Moody||CR.Fitch?'✅':'—'}</div>`);
+
+  // Escribir todo de una vez
+  document.getElementById('mb').innerHTML=M.join('');
+  document.getElementById('ov').style.display='flex';
+
+  // Cargar historial GDELT
+  let pts=GDELT_HISTORY[iso]||null;
+  if(!pts)pts=await fetchGDELTHistory(iso);
+  const hEl=document.getElementById('histChart');
+  if(hEl){if(pts?.length){hEl.innerHTML=drawSparkline(pts,280,60);}else if(r.GdeltKPI!=null){const gl2=gdeltLabel(r.GdeltKPI);hEl.innerHTML=`<span style="font-size:13px;color:${gl2.color};font-weight:700">${gl2.emoji} ${r.GdeltKPI}/100</span>`;}else{hEl.innerHTML=`<span style="font-size:11px;color:#94a3b8">Sin datos históricos</span>`;}}
+
+  // Cargar noticias
+  const arts=await fetchCountryNews(r.country);
+  const nEl=document.getElementById('newsContent');
+  if(!nEl)return;
+  if(!arts?.length){nEl.innerHTML=`<div class="newsLoading">Sin noticias recientes</div>`;return;}
+  nEl.innerHTML=arts.map(a=>{const d=a.seendate?a.seendate.slice(0,8):'';const fd=d?`${d.slice(6,8)}/${d.slice(4,6)}/${d.slice(0,4)}`:'';return`<div class="newsItem"><a href="${a.url}" target="_blank">${a.title||'Sin título'}</a><div class="newsDate">${fd} · ${a.domain||''}</div></div>`;}).join('');
+};
 </script>
 </body>
 </html>
